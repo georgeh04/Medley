@@ -39,6 +39,8 @@ dependencies:
   path_provider: ^2.1.2
   just_audio: ^0.9.36
   file_picker: ^6.1.1
+  sqflite: ^2.3.2
+  audio_metadata_reader: ^0.0.3
 
 dev_dependencies:
   flutter_test:

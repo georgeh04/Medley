@@ -1,4 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
+import 'package:medleylibrary/AlbumPage.dart';
+import 'package:medleylibrary/db.dart'; // Ensure this file has the necessary functions to interact with the database
+import 'package:flutter/material.dart';
+import 'package:sqflite/sqlite_api.dart';
+import 'library.dart';
+import 'package:provider/provider.dart';
+import 'package:just_audio/just_audio.dart';
+import 'package:file_picker/file_picker.dart';
+import 'dart:io';
+import 'db.dart';
+import 'package:sqflite/sqflite.dart';
+import 'package:path/path.dart';
+import 'main.dart';
 
 class MusicLibraryPage extends StatefulWidget {
   @override
@@ -7,13 +21,11 @@ class MusicLibraryPage extends StatefulWidget {
 
 class _MusicLibraryPageState extends State<MusicLibraryPage>
     with SingleTickerProviderStateMixin {
-  // Define a TabController to control the selected tab.
   TabController? _tabController;
 
   @override
   void initState() {
     super.initState();
-    // Initialize the TabController with 3 tabs.
     _tabController = TabController(length: 3, vsync: this);
   }
 
@@ -25,67 +37,150 @@ class _MusicLibraryPageState extends State<MusicLibraryPage>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: TabBar(
-        controller: _tabController,
-        tabs: [
-          Tab(text: 'Artists'),
-          Tab(text: 'Songs'),
-          Tab(text: 'Albums'),
-        ],
-      ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          ArtistsView(),
-          SongsView(),
-          AlbumsView(),
-        ],
-      ),
-    );
+    return Consumer<PlaybackState>(
+        builder: (context, playbackState, child) => Scaffold(
+              appBar: AppBar(
+                bottom: TabBar(
+                  controller: _tabController,
+                  tabs: [
+                    Tab(text: 'Artists'),
+                    Tab(text: 'Songs'),
+                    Tab(text: 'Albums'),
+                  ],
+                ),
+              ),
+              body: TabBarView(
+                controller: _tabController,
+                children: [
+                  FutureBuilder<List<Artist>>(
+                    future:
+                        fetchArtists(), // Assuming this function is defined in db.dart
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return Center(child: CircularProgressIndicator());
+                      } else if (snapshot.hasError) {
+                        return Text("Error: ${snapshot.error}");
+                      } else if (snapshot.hasData) {
+                        return ListView.builder(
+                          itemCount: snapshot.data!.length,
+                          itemBuilder: (context, index) {
+                            Artist artist = snapshot.data![index];
+                            return ListTile(
+                              leading: Icon(Icons.person),
+                              title: Text(artist.name),
+                              onTap: () {
+                                // Implement navigation or action when tapping on an artist
+                                print('Tapped on ${artist.name}');
+                              },
+                            );
+                          },
+                        );
+                      } else {
+                        return Text("No artists found");
+                      }
+                    },
+                  ),
+                  FutureBuilder<List<Song>>(
+                    future:
+                        fetchSongs(), // Assuming this function is defined in db.dart
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return Center(child: CircularProgressIndicator());
+                      } else if (snapshot.hasError) {
+                        return Text("Error: ${snapshot.error}");
+                      } else if (snapshot.hasData) {
+                        return ListView.builder(
+                          itemCount: snapshot.data!.length,
+                          itemBuilder: (context, index) {
+                            Song song = snapshot.data![index];
+                            return ListTile(
+                              leading: Icon(Icons.music_note),
+                              title: Text(song.title),
+                              subtitle: Text(song
+                                  .artistName), // Assuming Song has an artistName field
+                              onTap: () {
+                                setState(() {
+                                  playbackState.playSong(song.path, song.title);
+                                });
+                              },
+                            );
+                          },
+                        );
+                      } else {
+                        return Text("No songs found");
+                      }
+                    },
+                  ),
+                  FutureBuilder<List<Album>>(
+                    future:
+                        fetchAlbums(), // Assuming this function is defined in db.dart
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return Center(child: CircularProgressIndicator());
+                      } else if (snapshot.hasError) {
+                        return Text("Error: ${snapshot.error}");
+                      } else if (snapshot.hasData) {
+                        return ListView.builder(
+                          itemCount: snapshot.data!.length,
+                          itemBuilder: (context, index) {
+                            Album album = snapshot.data![index];
+                            return ListTile(
+                              leading: Container(
+                                child: Image.network(
+                                    'https://placehold.jp/150x150.png'),
+                              ),
+                              title: Text(album.title),
+                              subtitle: Text(album
+                                  .artistName), // Assuming Album has an artistName field
+                              onTap: () {
+                                Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                        builder: (context) =>
+                                            AlbumPage(albumId: album.id)));
+                              },
+                            );
+                          },
+                        );
+                      } else {
+                        return Text("No albums found");
+                      }
+                    },
+                  ),
+                ],
+              ),
+            ));
   }
 }
 
 class ArtistsView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    // Example list of artists. Replace with your dynamic data source.
-    final artists = ['Artist 1', 'Artist 2', 'Artist 3', 'Artist 4'];
-
-    return ListView.builder(
-      itemCount: artists.length,
-      itemBuilder: (context, index) {
-        return ListTile(
-          leading: Icon(Icons.person), // Placeholder for artist images
-          title: Text(artists[index]),
-          onTap: () {
-            // TODO: Implement navigation to artist detail
-            print('Tapped on ${artists[index]}');
-          },
-        );
-      },
-    );
-  }
-}
-
-class SongsView extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    // Example list of songs. Replace with your dynamic data source.
-    final songs = ['Song 1', 'Song 2', 'Song 3', 'Song 4'];
-
-    return ListView.builder(
-      itemCount: songs.length,
-      itemBuilder: (context, index) {
-        return ListTile(
-          leading: Icon(Icons.music_note), // Placeholder for song thumbnails
-          title: Text(songs[index]),
-          subtitle: Text('Artist for ${songs[index]}'), // Example artist name
-          onTap: () {
-            // TODO: Implement navigation to song detail
-            print('Tapped on ${songs[index]}');
-          },
-        );
+    return FutureBuilder<List<Artist>>(
+      future: fetchArtists(), // Assuming this function is defined in db.dart
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: CircularProgressIndicator());
+        } else if (snapshot.hasError) {
+          return Text("Error: ${snapshot.error}");
+        } else if (snapshot.hasData) {
+          return ListView.builder(
+            itemCount: snapshot.data!.length,
+            itemBuilder: (context, index) {
+              Artist artist = snapshot.data![index];
+              return ListTile(
+                leading: Icon(Icons.person),
+                title: Text(artist.name),
+                onTap: () {
+                  // Implement navigation or action when tapping on an artist
+                  print('Tapped on ${artist.name}');
+                },
+              );
+            },
+          );
+        } else {
+          return Text("No artists found");
+        }
       },
     );
   }
@@ -94,127 +189,147 @@ class SongsView extends StatelessWidget {
 class AlbumsView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    // Example list of albums. Replace with your dynamic data source.
-    final albums = ['Album 1', 'Album 2', 'Album 3', 'Album 4'];
-
-    return ListView.builder(
-      itemCount: albums.length,
-      itemBuilder: (context, index) {
-        return ListTile(
-          leading: Icon(Icons.album), // Placeholder for album covers
-          title: Text(albums[index]),
-          subtitle: Text('Artist for ${albums[index]}'), // Example artist name
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => AlbumPage(
-                  album: Album(
-                    title: albums[index],
-                    artist: 'Artist for ${albums[index]}',
-                    coverImageUrl:
-                        'https://via.placeholder.com/150', // Example album cover image
-                    releaseYear: 2021, // Example release year
-                    songs: [
-                      Song(
-                          title: 'Song 1',
-                          duration: Duration(minutes: 3, seconds: 30)),
-                      Song(
-                          title: 'Song 2',
-                          duration: Duration(minutes: 4, seconds: 15)),
-                      Song(
-                          title: 'Song 3',
-                          duration: Duration(minutes: 5, seconds: 0)),
-                    ],
-                  ),
-                ),
-              ),
-            );
-            print('Tapped on ${albums[index]}');
-          },
-        );
+    return FutureBuilder<List<Album>>(
+      future: fetchAlbums(), // Assuming this function is defined in db.dart
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: CircularProgressIndicator());
+        } else if (snapshot.hasError) {
+          return Text("Error: ${snapshot.error}");
+        } else if (snapshot.hasData) {
+          return ListView.builder(
+            itemCount: snapshot.data!.length,
+            itemBuilder: (context, index) {
+              Album album = snapshot.data![index];
+              return ListTile(
+                leading: Icon(Icons.album),
+                title: Text(album.title),
+                subtitle: Text(
+                    album.artistName), // Assuming Album has an artistName field
+                onTap: () {
+                  // Implement navigation or action when tapping on an album
+                  print('Tapped on ${album.title}');
+                },
+              );
+            },
+          );
+        } else {
+          return Text("No albums found");
+        }
       },
     );
   }
 }
 
-class Album {
-  final String title;
-  final String artist;
-  final String coverImageUrl;
-  final int releaseYear;
-  final List<Song> songs;
+// You'll need to define these classes based on your actual database schema
+class Artist {
+  final int id;
+  final String name;
 
-  Album(
-      {required this.title,
-      required this.artist,
-      required this.coverImageUrl,
-      required this.releaseYear,
-      required this.songs});
+  Artist({required this.id, required this.name});
+
+  // Method to create an Artist from a map (for example, from a database row)
+  factory Artist.fromMap(Map<String, dynamic> map) {
+    return Artist(
+      id: map['id'],
+      name: map['name'],
+    );
+  }
 }
 
 class Song {
+  final int id;
   final String title;
-  final Duration duration;
+  final int artistId;
+  final int albumId;
+  final String artistName; // Add artist name
+  final String path;
+  final int trackNumber;
+  final int duration;
 
-  Song({required this.title, required this.duration});
+  Song(
+      {required this.id,
+      required this.title,
+      required this.artistId,
+      required this.albumId,
+      required this.artistName,
+      required this.path,
+      required this.trackNumber,
+      required this.duration});
+
+  factory Song.fromMap(Map<String, dynamic> map) {
+    return Song(
+        id: map['id'],
+        title: map['title'],
+        artistId: map['artistId'],
+        albumId: map['albumId'],
+        artistName: map['artistName'], // Map this from the query result
+        path: map['filePath'],
+        trackNumber: map['trackNumber'],
+        duration: map['duration']);
+  }
 }
 
-class AlbumPage extends StatelessWidget {
-  final Album album;
+class Album {
+  final int id;
+  final String title;
+  final int artistId;
+  final String artistName; // Add artist name
 
-  AlbumPage({required this.album});
+  Album({
+    required this.id,
+    required this.title,
+    required this.artistId,
+    required this.artistName,
+  });
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(album.title),
-      ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Image.network(album.coverImageUrl,
-                fit: BoxFit.cover), // Display the album cover
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Text(
-                album.title,
-                style: Theme.of(context).textTheme.headline6,
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Text(
-                '${album.artist} • ${album.releaseYear}',
-                style: Theme.of(context).textTheme.subtitle1,
-              ),
-            ),
-            ListView.builder(
-              physics:
-                  NeverScrollableScrollPhysics(), // to prevent scrolling within the ListView
-              shrinkWrap: true, // necessary to display inside a Column
-              itemCount: album.songs.length,
-              itemBuilder: (context, index) {
-                Song song = album.songs[index];
-                return ListTile(
-                  leading: Icon(Icons.music_note),
-                  title: Text(song.title),
-                  subtitle: Text(_formatDuration(song.duration)),
-                );
-              },
-            ),
-          ],
-        ),
-      ),
+  factory Album.fromMap(Map<String, dynamic> map) {
+    return Album(
+      id: map['id'],
+      title: map['name'],
+      artistId: map['artistId'],
+      artistName: map['artistName'], // Map this from the query result
     );
   }
+}
 
-  String _formatDuration(Duration duration) {
-    String twoDigits(int n) => n.toString().padLeft(2, "0");
-    String twoDigitMinutes = twoDigits(duration.inMinutes.remainder(60));
-    String twoDigitSeconds = twoDigits(duration.inSeconds.remainder(60));
-    return "$twoDigitMinutes:$twoDigitSeconds";
-  }
+Future<List<Artist>> fetchArtists() async {
+  // Placeholder for database fetch logic
+  // Let's assume you're using SQLite and have a dbHelper instance
+  var db = await openDb();
+  final List<Map<String, dynamic>> maps = await db.query('artists');
+
+  return List.generate(maps.length, (i) {
+    return Artist.fromMap(maps[i]);
+  });
+}
+
+Future<List<Song>> fetchSongs() async {
+  var db = await openDb();
+  // Perform a join to get the artist's name along with the song's details
+  final List<Map<String, dynamic>> maps = await db.rawQuery('''
+    SELECT Songs.*, Artists.name AS artistName 
+    FROM Songs
+    JOIN Artists ON Songs.artistId = Artists.id
+  ''');
+
+  return List.generate(maps.length, (i) {
+    return Song.fromMap(maps[i]);
+  });
+}
+
+Future<List<Album>> fetchAlbums() async {
+  var db = await openDb();
+  // Perform a join to get the artist's name along with the album's details
+  final List<Map<String, dynamic>> maps = await db.rawQuery('''
+    SELECT Albums.*, Artists.name AS artistName 
+    FROM Albums
+    JOIN Artists ON Albums.artistId = Artists.id
+  ''');
+
+  print('Albums: $maps');
+
+  return List.generate(maps.length, (i) {
+    return Album.fromMap(maps[i]);
+  });
 }

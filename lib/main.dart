@@ -1,12 +1,42 @@
 import 'package:flutter/material.dart';
+import 'package:sqflite/sqlite_api.dart';
 import 'library.dart';
 import 'package:provider/provider.dart';
-import 'findMusic.dart';
 import 'package:just_audio/just_audio.dart';
 import 'package:file_picker/file_picker.dart';
+import 'dart:io';
+import 'db.dart';
+import 'package:sqflite/sqflite.dart';
+import 'package:path/path.dart';
 
 void main() {
   runApp(MusicPlayerApp());
+}
+
+bool isMusicFile(File file) {
+  // Check the file extension to determine if it's a music file
+  return file.path.endsWith('.mp3') ||
+      file.path.endsWith('.wav') ||
+      file.path.endsWith('.flac') ||
+      file.path.endsWith('.aac');
+}
+
+void printMusicFileInformation(File file) {
+  // Print the file path. You can extend this to print more info if needed
+  print(file.path);
+}
+
+Future<void> pickAndScanMusicFolder() async {
+  // Use FilePicker to let the user pick a directory
+  String? selectedDirectory = await FilePicker.platform
+      .getDirectoryPath(dialogTitle: 'Choose your music folder');
+
+  if (selectedDirectory != null) {
+    // If the user selected a directory, scan it for music files
+    await findMusicFiles(Directory(selectedDirectory));
+  } else {
+    print("No directory selected");
+  }
 }
 
 class MusicPlayerApp extends StatelessWidget {
@@ -78,11 +108,6 @@ class MainScreen extends StatefulWidget {
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
 
-  final List<Widget> _children = [
-    MusicLibraryPage(),
-    // Add more screens here
-  ];
-
   void onTabTapped(int index) {
     setState(() {
       _currentIndex = index;
@@ -91,7 +116,7 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   void initState() {
-    findMusicFiles();
+    pickAndScanMusicFolder();
     super.initState();
   }
 
@@ -99,7 +124,43 @@ class _MainScreenState extends State<MainScreen> {
   Widget build(BuildContext context) {
     return Consumer<PlaybackState>(
       builder: (context, playbackState, child) => Scaffold(
-        body: _children[_currentIndex],
+        body: Navigator(
+          onGenerateRoute: (RouteSettings settings) {
+            WidgetBuilder builder;
+            switch (settings.name) {
+              case '/':
+                builder = (BuildContext context) => MusicLibraryPage();
+                break;
+              default:
+                throw Exception('Invalid route: ${settings.name}');
+            }
+            return MaterialPageRoute(builder: builder, settings: settings);
+          },
+        ),
+        drawer: Drawer(
+          child: ListView(
+            children: [
+              ListTile(
+                title: Text('Print Artists'),
+                onTap: () {
+                  printArtists();
+                },
+              ),
+              ListTile(
+                title: Text('Print Albums'),
+                onTap: () {
+                  printAlbums();
+                },
+              ),
+              ListTile(
+                title: Text('Print Songs'),
+                onTap: () {
+                  printSongs();
+                },
+              ),
+            ],
+          ),
+        ),
         appBar: AppBar(
           title: Text('Music Player'),
           actions: [
