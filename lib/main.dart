@@ -8,6 +8,7 @@ import 'dart:io';
 import 'db.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
+import 'audiomanager.dart';
 
 void main() {
   runApp(MusicPlayerApp());
@@ -42,61 +43,17 @@ Future<void> pickAndScanMusicFolder() async {
 class MusicPlayerApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-        create: (_) => PlaybackState(),
-        child: MaterialApp(
-          theme: ThemeData(
-            primarySwatch: Colors.blue,
-            visualDensity: VisualDensity.adaptivePlatformDensity,
-          ),
-          darkTheme: ThemeData(
-            brightness: Brightness.dark,
-          ),
-          themeMode: ThemeMode.dark,
-          home: MainScreen(),
-        ));
-  }
-}
-
-class PlaybackState with ChangeNotifier {
-  String _currentSong = "No song playing";
-  bool _isPlaying = false;
-  final AudioPlayer _audioPlayer = AudioPlayer();
-
-  String get currentSong => _currentSong;
-  bool get isPlaying => _isPlaying;
-
-  void playSong(String song, String name) async {
-    _currentSong = name;
-    await _audioPlayer.setFilePath(song);
-    await _audioPlayer.play();
-    _isPlaying = true;
-    print('playing');
-    notifyListeners();
-  }
-
-  void pause() async {
-    _isPlaying = false;
-    await _audioPlayer.pause();
-
-    print('paused');
-    notifyListeners();
-  }
-
-  void play() async {
-    _isPlaying = true;
-    await _audioPlayer.play();
-
-    print('playing');
-    notifyListeners();
-  }
-
-  // Add methods as needed for your app's functionality
-
-  @override
-  void dispose() {
-    _audioPlayer.dispose();
-    super.dispose();
+    return MaterialApp(
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+        visualDensity: VisualDensity.adaptivePlatformDensity,
+      ),
+      darkTheme: ThemeData(
+        brightness: Brightness.dark,
+      ),
+      themeMode: ThemeMode.dark,
+      home: MainScreen(),
+    );
   }
 }
 
@@ -114,6 +71,8 @@ class _MainScreenState extends State<MainScreen> {
     });
   }
 
+  var _playbackManager = PlaybackManager();
+
   @override
   void initState() {
     pickAndScanMusicFolder();
@@ -121,9 +80,13 @@ class _MainScreenState extends State<MainScreen> {
   }
 
   @override
+  void dispose() {
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Consumer<PlaybackState>(
-      builder: (context, playbackState, child) => Scaffold(
+    return Scaffold(
         body: Navigator(
           onGenerateRoute: (RouteSettings settings) {
             WidgetBuilder builder;
@@ -163,62 +126,49 @@ class _MainScreenState extends State<MainScreen> {
         ),
         appBar: AppBar(
           title: Text('Music Player'),
-          actions: [
-            IconButton(
-              icon: Icon(Icons.folder_open),
-              onPressed: () async {
-                FilePickerResult? result = await FilePicker.platform.pickFiles(
-                  type: FileType.custom,
-                  allowedExtensions: ['mp3', 'wav', 'flac', 'aac'],
-                );
-
-                if (result != null) {
-                  String path = result.files.single.path!;
-                  String Title = result.files.single.name;
-                  setState(() {
-                    playbackState.playSong(path, Title);
-                  });
-                }
-              },
-            ),
-          ],
         ),
         bottomNavigationBar: BottomAppBar(
-          child: Container(
-            height: 70,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                IconButton(
-                  icon: Icon(
-                      playbackState.isPlaying ? Icons.pause : Icons.play_arrow),
-                  onPressed: () {
-                    // Play or pause the song based on current state
-                    if (playbackState.isPlaying) {
-                      setState(() {
-                        playbackState.pause();
-                      });
-                    } else {
-                      setState(() {
-                        playbackState.play();
-                      });
-                    }
-                  },
+          child: ValueListenableBuilder<Song?>(
+            valueListenable: _playbackManager.currentSongNotifier,
+            builder: (context, currentSong, child) {
+              return Container(
+                height: 70,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    IconButton(
+                      icon: Icon(_playbackManager.isPlaying
+                          ? Icons.pause
+                          : Icons.play_arrow),
+                      onPressed: () {
+                        if (_playbackManager.isPlaying) {
+                          _playbackManager.pause();
+                        } else {
+                          _playbackManager.play();
+                        }
+                      },
+                    ),
+                    Container(
+                      width: 300,
+                      child: Text(
+                        currentSong?.title ?? 'No song playing',
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.skip_previous),
+                      onPressed: () => _playbackManager.previous(),
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.skip_next),
+                      onPressed: () => _playbackManager.next(),
+                    ),
+                  ],
                 ),
-                Container(
-                  width: 300,
-                  child: Text(
-                    playbackState.currentSong,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                // Add more controls as needed
-              ],
-            ),
+              );
+            },
           ),
-        ),
-      ),
-    );
+        ));
   }
 }
 

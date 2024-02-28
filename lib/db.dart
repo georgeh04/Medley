@@ -5,6 +5,8 @@ import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import 'package:audio_metadata_reader/audio_metadata_reader.dart';
 import 'library.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 
 // Define your database opening function if not already done
 Future<Database> openDb() async {
@@ -27,6 +29,7 @@ Future<Database> openDb() async {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         artistId INTEGER NOT NULL,
         name TEXT NOT NULL,
+        coverUrl TEXT NOT NULL,
         FOREIGN KEY (artistId) REFERENCES Artists(id)
       )
     ''');
@@ -94,7 +97,7 @@ Future<void> insertMusicInfoIntoDb(
     int duration,
     String filePath) async {
   int artistId = await _insertArtist(db, artistName);
-  int albumId = await _insertAlbum(db, artistId, albumName);
+  int albumId = await _insertAlbum(db, artistId, albumName, artistName);
 
   await db.insert(
       'Songs',
@@ -131,7 +134,37 @@ Future<int> _insertArtist(Database db, String artistName) async {
   );
 }
 
-Future<int> _insertAlbum(Database db, int artistId, String albumName) async {
+Future<String?> fetchAlbumCoverArt(String artistName, String albumName) async {
+  const String apiKey =
+      '47eae4afc5dc8f374fc3047348bf979d'; // Replace with your Last.fm API key
+  final String apiUrl =
+      'http://ws.audioscrobbler.com/2.0/?method=album.getinfo&api_key=$apiKey&artist=${Uri.encodeComponent(artistName)}&album=${Uri.encodeComponent(albumName)}&format=json';
+
+  try {
+    final response = await http.get(Uri.parse(apiUrl));
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      // Navigate the JSON response to find the image URL
+      var albumData = data['album'];
+      if (albumData != null) {
+        var images = albumData['image'];
+        if (images != null && images.isNotEmpty) {
+          // Last.fm provides multiple sizes, this example grabs the last one (largest)
+          String imageUrl = images.last['#text'];
+          return imageUrl.isNotEmpty ? imageUrl : null;
+        }
+      }
+    } else {
+      print('Failed to load album cover art');
+    }
+  } catch (e) {
+    print('Error fetching album cover art: $e');
+  }
+  return null; // Return null if there was an error or if the cover art was not found
+}
+
+Future<int> _insertAlbum(
+    Database db, int artistId, String albumName, String artistName) async {
   // First, check if the album already exists for the artist.
   final List<Map<String, dynamic>> albums = await db.query(
     'Albums',
@@ -139,6 +172,8 @@ Future<int> _insertAlbum(Database db, int artistId, String albumName) async {
     where: 'name = ? AND artistId = ?',
     whereArgs: [albumName, artistId],
   );
+
+  var coverArt = await fetchAlbumCoverArt(artistName, albumName);
 
   // If the album exists, return the existing ID.
   if (albums.isNotEmpty) {
@@ -148,7 +183,7 @@ Future<int> _insertAlbum(Database db, int artistId, String albumName) async {
   // If the album doesn't exist, insert a new record.
   return await db.insert(
     'Albums',
-    {'artistId': artistId, 'name': albumName},
+    {'artistId': artistId, 'name': albumName, 'coverUrl': coverArt ?? ''},
     conflictAlgorithm: ConflictAlgorithm.ignore,
   );
 }
@@ -197,7 +232,7 @@ Future<void> printAlbums() async {
   List<Map<String, dynamic>> albums = await db.query('Albums');
   for (var album in albums) {
     print(
-        'Album ID: ${album['id']}, Artist ID: ${album['artistId']}, Name: ${album['name']}');
+        'Album ID: ${album['id']}, Artist ID: ${album['artistId']}, Name: ${album['name']}, Cover URL: ${album['coverUrl']}');
   }
 }
 
