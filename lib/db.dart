@@ -2,52 +2,73 @@ import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:sqflite/sqflite.dart';
+import 'package:sqflite_common/sqlite_api.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:path/path.dart';
 import 'package:audio_metadata_reader/audio_metadata_reader.dart';
 import 'library.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
 
-// Define your database opening function if not already done
 Future<Database> openDb() async {
-  final databasePath = await getDatabasesPath();
-  final path = join(databasePath, 'medleyLibrary.db');
+  // Check if the platform is Windows
+  if (Platform.isWindows) {
+    // Initialize sqflite FFI
+    sqfliteFfiInit();
+    // Use the database factory for FFI
+    final databaseFactory = databaseFactoryFfi;
+    var databasesPath = await getApplicationDocumentsDirectory();
+    String path = join(databasesPath.path, 'medleyLibrary.db');
+    return databaseFactory.openDatabase(path,
+        options: OpenDatabaseOptions(
+          version: 1,
+          onCreate: (Database db, int version) async {
+            await _createDb(db);
+          },
+        ));
+  } else {
+    // For non-Windows platforms, continue using the existing path
+    final databasePath = await getDatabasesPath();
+    final path = join(databasePath, 'medleyLibrary.db');
+    return openDatabase(path, version: 1,
+        onCreate: (Database db, int version) async {
+      await _createDb(db);
+    });
+  }
+}
 
-  return openDatabase(path, version: 1,
-      onCreate: (Database db, int version) async {
-    // Create the Artists table
-    await db.execute('''
-      CREATE TABLE Artists (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL
-      )
-    ''');
+// Refactored the DB creation logic to a separate function for clarity
+Future<void> _createDb(Database db) async {
+  await db.execute('''
+    CREATE TABLE Artists (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL
+    )
+  ''');
 
-    // Create the Albums table
-    await db.execute('''
-      CREATE TABLE Albums (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        artistId INTEGER NOT NULL,
-        name TEXT NOT NULL,
-        coverUrl TEXT NOT NULL,
-        FOREIGN KEY (artistId) REFERENCES Artists(id)
-      )
-    ''');
+  await db.execute('''
+    CREATE TABLE Albums (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      artistId INTEGER NOT NULL,
+      name TEXT NOT NULL,
+      coverUrl TEXT NOT NULL,
+      FOREIGN KEY (artistId) REFERENCES Artists(id)
+    )
+  ''');
 
-    // Create the Songs table
-    await db.execute('''
-      CREATE TABLE Songs (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        albumId INTEGER NOT NULL,
-        artistId INTEGER NOT NULL,
-        title TEXT NOT NULL,
-        trackNumber INTEGER,
-        duration INTEGER,
-        filePath TEXT NOT NULL,
-        FOREIGN KEY (albumId) REFERENCES Albums(id)
-      )
-    ''');
-  });
+  await db.execute('''
+    CREATE TABLE Songs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      albumId INTEGER NOT NULL,
+      artistId INTEGER NOT NULL,
+      title TEXT NOT NULL,
+      trackNumber INTEGER,
+      duration INTEGER,
+      filePath TEXT NOT NULL,
+      FOREIGN KEY (albumId) REFERENCES Albums(id)
+    )
+  ''');
 }
 
 Future<void> findMusicFiles(Directory directory,

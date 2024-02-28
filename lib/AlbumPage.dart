@@ -71,6 +71,7 @@ class _AlbumPageState extends State<AlbumPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(),
       body: FutureBuilder<Album>(
         future: fetchAlbum(),
         builder: (context, albumSnapshot) {

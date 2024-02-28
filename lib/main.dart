@@ -1,13 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:sqflite/sqlite_api.dart';
 import 'library.dart';
-import 'package:provider/provider.dart';
-import 'package:just_audio/just_audio.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:io';
 import 'db.dart';
-import 'package:sqflite/sqflite.dart';
-import 'package:path/path.dart';
 import 'audiomanager.dart';
 
 void main() {
@@ -27,10 +22,32 @@ void printMusicFileInformation(File file) {
   print(file.path);
 }
 
-Future<void> pickAndScanMusicFolder() async {
+Future<void> pickAndScanMusicFolder(BuildContext context) async {
   // Use FilePicker to let the user pick a directory
   String? selectedDirectory = await FilePicker.platform
       .getDirectoryPath(dialogTitle: 'Choose your music folder');
+
+  // Show loading dialog
+  showDialog(
+    context: context,
+    barrierDismissible:
+        false, // Prevents the dialog from closing before the task is done
+    builder: (BuildContext context) {
+      return Dialog(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(width: 20),
+              Text("Scanning music files..."),
+            ],
+          ),
+        ),
+      );
+    },
+  );
 
   if (selectedDirectory != null) {
     // If the user selected a directory, scan it for music files
@@ -38,6 +55,9 @@ Future<void> pickAndScanMusicFolder() async {
   } else {
     print("No directory selected");
   }
+
+  // Dismiss the loading dialog
+  Navigator.of(context, rootNavigator: true).pop();
 }
 
 class MusicPlayerApp extends StatelessWidget {
@@ -75,7 +95,8 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   void initState() {
-    pickAndScanMusicFolder();
+    pickAndScanMusicFolder(context);
+
     super.initState();
   }
 

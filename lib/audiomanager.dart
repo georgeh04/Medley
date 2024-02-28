@@ -41,6 +41,7 @@ class PlaybackManager {
   }
 
   void playSongObject(Song song) async {
+    print('playing song: ${song.path}');
     // Clear the current playlist and queue
     await _playlist.clear(); // Clear existing songs in the playlist
     _queue
