@@ -1,12 +1,10 @@
 import 'dart:async';
 import 'dart:io';
-import 'package:flutter/material.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:sqflite_common/sqlite_api.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:path/path.dart';
 import 'package:audio_metadata_reader/audio_metadata_reader.dart';
-import 'library.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
@@ -113,14 +111,43 @@ Future<void> insertMusicInfoIntoDb(
     Database db,
     String artistName,
     String albumName,
-    String songTitle,
-    int trackNumber,
+    String? songTitle,
+    int? trackNumber,
     int duration,
     String filePath) async {
   int artistId = await _insertArtist(db, artistName);
   int albumId = await _insertAlbum(db, artistId, albumName, artistName);
 
-  await db.insert(
+  // Fallback: Use filename for title if metadata missing
+  final fileName = basename(filePath); // Assuming basename from package:path
+  final fileTitle = fileName.split('.').first; // Remove file extension
+
+  final titleTrackRegex = RegExp(r'^(\d+)\s+(.+)$');
+  final match = titleTrackRegex.firstMatch(fileTitle);
+
+  if (match != null) {
+    trackNumber = int.parse(match.group(1) ?? '0');
+    songTitle = match.group(2) ?? songTitle ?? fileTitle;
+  } else if (songTitle == null || songTitle.isEmpty) {
+    songTitle = fileTitle; // Use filename if no metadata and no regex match
+  }
+
+  // Normalize inputs to avoid case-sensitivity and path format issues
+  String normalizedSongTitle = songTitle.toLowerCase().trim();
+  String normalizedFilePath = filePath.toLowerCase().trim();
+
+  // Check for existing song in the DB
+  final List<Map<String, dynamic>> existingSongs = await db.query(
+    'Songs',
+    columns: ['id'],
+    where:
+        'LOWER(title) = ? AND albumId = ? AND trackNumber = ? AND LOWER(filePath) = ?',
+    whereArgs: [normalizedSongTitle, albumId, trackNumber, normalizedFilePath],
+  );
+
+  // Insert song if not exists
+  if (existingSongs.isEmpty) {
+    await db.insert(
       'Songs',
       {
         'albumId': albumId,
@@ -130,7 +157,9 @@ Future<void> insertMusicInfoIntoDb(
         'duration': duration,
         'filePath': filePath
       },
-      conflictAlgorithm: ConflictAlgorithm.ignore);
+      conflictAlgorithm: ConflictAlgorithm.ignore,
+    );
+  }
 }
 
 Future<int> _insertArtist(Database db, String artistName) async {

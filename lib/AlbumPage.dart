@@ -2,17 +2,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:medleylibrary/db.dart'; // Ensure this file has the necessary functions to interact with the database
-import 'package:flutter/material.dart';
-import 'package:sqflite/sqlite_api.dart';
 import 'library.dart';
-import 'package:provider/provider.dart';
-import 'package:just_audio/just_audio.dart';
-import 'package:file_picker/file_picker.dart';
-import 'dart:io';
-import 'db.dart';
-import 'package:sqflite/sqflite.dart';
-import 'package:path/path.dart';
-import 'main.dart';
+
 import 'audiomanager.dart';
 
 Future<List<Song>> fetchSongsForAlbum(int albumId) async {
