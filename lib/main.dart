@@ -7,10 +7,107 @@ import 'db.dart';
 import 'audiomanager.dart';
 import 'package:media_kit/media_kit.dart';
 import 'ArtistPage.dart';
+import 'package:audio_service/audio_service.dart';
+import 'package:desktop_window/desktop_window.dart';
 
-void main() {
+import 'dart:io' show Platform;
+
+import 'package:permission_handler/permission_handler.dart';
+
+Future<void> requestPermissions() async {
+  var status = await Permission.storage.status;
+  if (!status.isGranted) {
+    await Permission.storage.request();
+  }
+}
+
+void main() async {
   MediaKit.ensureInitialized();
+  final audioHandler = await AudioService.init(
+    builder: () => MyAudioHandler(),
+    config: AudioServiceConfig(
+      androidNotificationChannelId: 'com.yourapp.music.channel.audio',
+      androidNotificationChannelName: 'Music playback',
+      androidNotificationIcon:
+          'mipmap/ic_launcher', // Update with your app icon
+      androidShowNotificationBadge: true,
+      androidStopForegroundOnPause: true,
+    ),
+  );
+  WidgetsFlutterBinding.ensureInitialized();
+
+  if (Platform.isMacOS || Platform.isWindows) {
+    await DesktopWindow.setMinWindowSize(Size(800, 600));
+  }
+
   runApp(MusicPlayerApp());
+}
+
+class MyAudioHandler extends BaseAudioHandler {
+  final PlaybackManager _playbackManager = PlaybackManager();
+
+  MyAudioHandler() {
+    // Listen to playback manager changes and update audio_service state accordingly
+    _playbackManager.currentSongNotifier.addListener(_updateCurrentMediaItem);
+    _playbackManager.isPlaying.addListener(_updatePlaybackState);
+    // Add more listeners as needed for position, queue, etc.
+  }
+
+  void _updateCurrentMediaItem() {
+    final Song? currentSong = _playbackManager.getCurrentSong();
+    if (currentSong != null) {
+      // Update the media item for the currently playing song
+      mediaItem.add(MediaItem(
+        artUri: Uri.parse(currentSong.coverUrl),
+        id: currentSong.path,
+        album: currentSong.albumName,
+        title: currentSong.title,
+        artist: currentSong.artistName,
+        // Add more properties as needed, like duration, artUri, etc.
+      ));
+    }
+  }
+
+  void _updatePlaybackState() {
+    // Update the playback state (e.g., playing, paused)
+    final isPlaying = _playbackManager.isPlaying.value;
+    playbackState.add(playbackState.value.copyWith(
+      controls: [
+        MediaControl.skipToPrevious,
+        if (isPlaying) MediaControl.pause else MediaControl.play,
+        MediaControl.skipToNext,
+        // Add more controls as needed
+      ],
+      systemActions: const {
+        MediaAction.seek,
+        // Add more system actions as needed
+      },
+      playing: isPlaying,
+      // Update other state properties as needed, like current position
+    ));
+  }
+
+  @override
+  Future<void> play() async {
+    await _playbackManager.play();
+  }
+
+  @override
+  Future<void> pause() async {
+    await _playbackManager.pause();
+  }
+
+  @override
+  Future<void> skipToNext() async {
+    await _playbackManager.next();
+  }
+
+  @override
+  Future<void> skipToPrevious() async {
+    await _playbackManager.previous();
+  }
+
+  // Implement other methods like stop, seek, setQueue, addQueueItem, etc., as needed
 }
 
 bool isMusicFile(File file) {
@@ -280,14 +377,18 @@ class _MainScreenState extends State<MainScreen> {
 
   @override
   void initState() {
-    pickAndScanMusicFolder(context).then((_) {
-      // If you're directly updating data that MusicLibraryPage reads,
-      // simply calling setState here will refresh the data.
-      setState(() {
-        // This empty setState call triggers a rebuild of MainScreen,
-        // which in turn will recreate MusicLibraryPage with potentially new data.
+// Call this function before invoking the FilePicker
+    requestPermissions().then((_) {
+      pickAndScanMusicFolder(context).then((_) {
+        // If you're directly updating data that MusicLibraryPage reads,
+        // simply calling setState here will refresh the data.
+        setState(() {
+          // This empty setState call triggers a rebuild of MainScreen,
+          // which in turn will recreate MusicLibraryPage with potentially new data.
+        });
       });
     });
+
     super.initState();
   }
 
@@ -313,127 +414,122 @@ class _MainScreenState extends State<MainScreen> {
           return MaterialPageRoute(builder: builder, settings: settings);
         },
       ),
-      drawer: Drawer(
-        child: ListView(
-          children: [
-            ListTile(
-              title: Text('Print Artists'),
-              onTap: () {
-                printArtists();
-              },
-            ),
-            ListTile(
-              title: Text('Print Albums'),
-              onTap: () {
-                printAlbums();
-              },
-            ),
-            ListTile(
-              title: Text('Print Songs'),
-              onTap: () {
-                printSongs();
-              },
-            ),
-          ],
-        ),
-      ),
-      appBar: AppBar(
-        title: Text('Music Player'),
-      ),
       bottomNavigationBar: BottomAppBar(
+        height: 104,
         child: ValueListenableBuilder<Song?>(
           valueListenable: _playbackManager.currentSongNotifier,
           builder: (context, currentSong, child) {
-            return Container(
-                height: 78,
-                child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // Left side: Album/Song info
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                        child: Row(children: [
-                          ClickableAlbumCover(currentSong: currentSong),
-                          SizedBox(width: 16),
-                          if (currentSong != null)
-                            Column(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Flexible(
-                                    child: TextButton(
+            return Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Container(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                    child: Row(children: [
+                      ClickableAlbumCover(currentSong: currentSong),
+                      SizedBox(width: 16),
+                      if (currentSong != null)
+                        Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Flexible(
+                                fit: FlexFit.tight,
+                                child: TextButton(
                                   onPressed: () {
                                     navigatorKey.currentState!.push(
                                         MaterialPageRoute(
                                             builder: (context) => AlbumPage(
                                                 albumId: currentSong.albumId)));
                                   },
-                                  child: Text(currentSong.title,
-                                      overflow: TextOverflow.ellipsis),
-                                )),
-                                Flexible(
-                                    child: TextButton(
-                                  onPressed: () {
-                                    navigatorKey.currentState!
-                                        .push(MaterialPageRoute(
-                                            builder: (context) => ArtistPage(
-                                                  artistId: currentSong.albumId,
-                                                  artistName:
-                                                      currentSong.artistName,
-                                                )));
-                                  },
                                   child: Text(
-                                    currentSong.artistName,
-                                    style: TextStyle(
-                                        fontSize: 13,
-                                        fontWeight: FontWeight.w300,
-                                        color: Colors.grey),
+                                    currentSong.title,
+                                    overflow: TextOverflow.ellipsis,
+                                    textWidthBasis: TextWidthBasis.values[1],
+                                    maxLines: 1,
+                                    softWrap: true,
                                   ),
-                                ))
-                              ],
-                            ),
-                        ]),
-                      ),
-                      Spacer(), // Pushes controls towards the center
-                      Row(
-                        mainAxisSize:
-                            MainAxisSize.min, // Use minimal space for the row
+                                )),
+                            Flexible(
+                                child: TextButton(
+                              onPressed: () {
+                                navigatorKey.currentState!
+                                    .push(MaterialPageRoute(
+                                        builder: (context) => ArtistPage(
+                                              artistId: currentSong.albumId,
+                                              artistName:
+                                                  currentSong.artistName,
+                                            )));
+                              },
+                              child: Text(
+                                currentSong.artistName,
+                                style: TextStyle(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w300,
+                                    color: Colors.grey),
+                              ),
+                            ))
+                          ],
+                        ),
+                    ]),
+                  ),
+                ),
+                Container(
+                  child: Row(
+                    children: [
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          IconButton(
-                            icon: Icon(Icons.skip_previous),
-                            onPressed: () => _playbackManager.previous(),
-                          ),
-                          ValueListenableBuilder<bool>(
-                            valueListenable: _playbackManager.isPlaying,
-                            builder: (context, isPlaying, child) {
-                              return IconButton(
-                                icon: Icon(
-                                    isPlaying ? Icons.pause : Icons.play_arrow),
-                                onPressed: () {
-                                  if (isPlaying) {
-                                    _playbackManager.pause();
-                                  } else {
-                                    _playbackManager.play();
-                                  }
+                          Row(
+                            mainAxisSize: MainAxisSize
+                                .min, // Use minimal space for the row
+                            children: [
+                              IconButton(
+                                icon: Icon(Icons.skip_previous),
+                                onPressed: () => _playbackManager.previous(),
+                              ),
+                              ValueListenableBuilder<bool>(
+                                valueListenable: _playbackManager.isPlaying,
+                                builder: (context, isPlaying, child) {
+                                  return IconButton(
+                                    icon: Icon(isPlaying
+                                        ? Icons.pause
+                                        : Icons.play_arrow),
+                                    onPressed: () {
+                                      if (isPlaying) {
+                                        _playbackManager.pause();
+                                      } else {
+                                        _playbackManager.play();
+                                      }
+                                    },
+                                  );
                                 },
-                              );
-                            },
-                          ),
-                          IconButton(
-                            icon: Icon(Icons.skip_next),
-                            onPressed: () => _playbackManager.next(),
+                              ),
+                              IconButton(
+                                icon: Icon(Icons.skip_next),
+                                onPressed: () => _playbackManager.next(),
+                              ),
+                            ],
                           ),
                         ],
-                      ),
-                      Spacer(), // This ensures the controls are centered
-                      // Right side: Placeholder or additional controls (invisible to keep balance)
+                      )
+                    ],
+                  ),
+                ),
+                Container(
+                  child: Row(
+                    children: [
                       VolumeControl(playbackManager: _playbackManager),
                       IconButton(
                           onPressed: () {
                             showQueueDialog(context, _playbackManager);
                           },
                           icon: Icon(Icons.queue_music)),
-                    ]));
+                    ],
+                  ),
+                )
+              ],
+            );
           },
         ),
       ),

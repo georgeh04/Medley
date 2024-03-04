@@ -19,7 +19,11 @@ class PlaybackManager {
 
   PlaybackManager._internal() {
     _player.stream.completed.listen((event) {
-      currentSongNotifier.value = queue[currentTrackIndex + 1];
+      print('changing song: $event');
+      if (event == true) {
+        currentTrackIndex++;
+        currentSongNotifier.value = queue[currentTrackIndex];
+      }
     });
     _player.stream.playing.listen((_isPlaying) => isPlaying.value = _isPlaying);
     _player.stream.position
@@ -82,12 +86,14 @@ class PlaybackManager {
 
   Future<void> next() async {
     await _player.next();
-    currentSongNotifier.value = queue[++currentTrackIndex];
+    currentTrackIndex++;
+    currentSongNotifier.value = queue[currentTrackIndex];
   }
 
   Future<void> previous() async {
     await _player.previous();
-    currentSongNotifier.value = queue[--currentTrackIndex];
+    currentTrackIndex--;
+    currentSongNotifier.value = queue[currentTrackIndex];
   }
 
   Future<void> stop() async {

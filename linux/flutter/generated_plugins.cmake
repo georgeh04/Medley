@@ -4,6 +4,7 @@
 
 list(APPEND FLUTTER_PLUGIN_LIST
   audioplayers_linux
+  desktop_window
   media_kit_libs_linux
   sqlite3_flutter_libs
 )

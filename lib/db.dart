@@ -72,6 +72,7 @@ Future<void> _createDb(Database db) async {
 Future<void> findMusicFiles(Directory directory,
     {String? artistName, String? albumName}) async {
   final db = await openDb();
+  print('database here: ${await db.query('Artists')}');
 
   await for (FileSystemEntity entity
       in directory.list(recursive: false, followLinks: false)) {
