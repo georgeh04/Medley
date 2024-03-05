@@ -9,6 +9,11 @@ import 'package:media_kit/media_kit.dart';
 import 'ArtistPage.dart';
 import 'package:audio_service/audio_service.dart';
 import 'package:desktop_window/desktop_window.dart';
+import 'package:sqflite/sqflite.dart';
+import 'package:sqflite_common/sqlite_api.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'package:peerdart/peerdart.dart';
+import 'p2p.dart';
 
 import 'dart:io' show Platform;
 
@@ -17,6 +22,7 @@ import 'package:permission_handler/permission_handler.dart';
 Future<void> requestPermissions() async {
   var status = await Permission.storage.status;
   if (!status.isGranted) {
+    await Permission.audio.request();
     await Permission.storage.request();
   }
 }
@@ -364,6 +370,50 @@ class _SongProgressWidgetState extends State<SongProgressWidget> {
   }
 }
 
+class DataSearch extends SearchDelegate<String> {
+  late Database db;
+  DataSearch() {
+    openDb().then((database) {
+      db = database;
+    });
+  }
+  @override
+  List<Widget> buildActions(BuildContext context) {
+    return [
+      IconButton(
+        icon: Icon(Icons.clear),
+        onPressed: () {
+          query = '';
+        },
+      )
+    ];
+  }
+
+  @override
+  Widget buildLeading(BuildContext context) {
+    return IconButton(
+      icon: AnimatedIcon(
+        icon: AnimatedIcons.menu_arrow,
+        progress: transitionAnimation,
+      ),
+      onPressed: () {
+        close(context, 'null');
+      },
+    );
+  }
+
+  @override
+  Widget buildResults(BuildContext context) {
+    return Text('data');
+  }
+
+  @override
+  Widget buildSuggestions(BuildContext context) {
+    // Optionally, you can also implement search suggestions here
+    return Container();
+  }
+}
+
 // Define a global key for the navigator
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -400,6 +450,25 @@ class _MainScreenState extends State<MainScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: Text('App Bar with Search'),
+        actions: <Widget>[
+          IconButton(
+            icon: Icon(Icons.search),
+            onPressed: () {
+              startServer();
+// You can pick your own id or omit the id if you want to get a random one from the server.
+            },
+          ),
+          IconButton(
+            icon: Icon(Icons.connect_without_contact),
+            onPressed: () {
+              testServerConnection();
+// You can pick your own id or omit the id if you want to get a random one from the server.
+            },
+          )
+        ],
+      ),
       body: Navigator(
         key: navigatorKey,
         onGenerateRoute: (RouteSettings settings) {
@@ -534,51 +603,5 @@ class _MainScreenState extends State<MainScreen> {
         ),
       ),
     );
-  }
-}
-
-class MusicPlayerScreen extends StatefulWidget {
-  @override
-  _MusicPlayerScreenState createState() => _MusicPlayerScreenState();
-}
-
-class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              'Now Playing',
-              style: TextStyle(fontSize: 20),
-            ),
-            SizedBox(height: 16),
-            Image.asset(
-              'assets/album_cover.png',
-              width: 200,
-              height: 200,
-            ),
-            SizedBox(height: 16),
-            Text(
-              'Song Title',
-              style: TextStyle(fontSize: 16),
-            ),
-            SizedBox(height: 8),
-            Text(
-              'Artist Name',
-              style: TextStyle(fontSize: 14),
-            ),
-            SizedBox(height: 16),
-          ],
-        ),
-      ),
-    );
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
   }
 }
