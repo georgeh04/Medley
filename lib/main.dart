@@ -14,6 +14,9 @@ import 'package:sqflite_common/sqlite_api.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:peerdart/peerdart.dart';
 import 'p2p.dart';
+import 'SearchPage.dart';
+import 'package:sidebarx/sidebarx.dart';
+import 'Store.dart';
 
 import 'dart:io' show Platform;
 
@@ -176,6 +179,9 @@ class MusicPlayerApp extends StatelessWidget {
         visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
       darkTheme: ThemeData(
+        appBarTheme: AppBarTheme(backgroundColor: Color(0xFF2A2730)),
+        scaffoldBackgroundColor: Color(0xFF2A2730),
+        primaryColorDark: Color(0xFF2A2730),
         brightness: Brightness.dark,
       ),
       themeMode: ThemeMode.dark,
@@ -414,6 +420,105 @@ class DataSearch extends SearchDelegate<String> {
   }
 }
 
+const canvasColor = Color(0xFF2A2730);
+const scaffoldBackgroundColor = Color(0xFF464667);
+const accentCanvasColor = Color.fromARGB(255, 32, 32, 52);
+const white = Colors.white;
+final actionColor = const Color(0xFF2E2E48).withOpacity(0.6);
+final divider = Divider(color: white.withOpacity(0.3), height: 1);
+
+class ExampleSidebarX extends StatelessWidget {
+  const ExampleSidebarX({
+    Key? key,
+    required SidebarXController controller,
+  })  : _controller = controller,
+        super(key: key);
+
+  final SidebarXController _controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return SidebarX(
+      controller: _controller,
+      theme: SidebarXTheme(
+        margin: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: canvasColor,
+          borderRadius: BorderRadius.circular(20),
+        ),
+        hoverColor: scaffoldBackgroundColor,
+        textStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
+        selectedTextStyle: const TextStyle(color: Colors.white),
+        itemTextPadding: const EdgeInsets.only(left: 30),
+        selectedItemTextPadding: const EdgeInsets.only(left: 30),
+        itemDecoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: canvasColor),
+        ),
+        selectedItemDecoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: actionColor.withOpacity(0.37),
+          ),
+          gradient: const LinearGradient(
+            colors: [accentCanvasColor, canvasColor],
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.28),
+              blurRadius: 30,
+            )
+          ],
+        ),
+        iconTheme: IconThemeData(
+          color: Colors.white.withOpacity(0.7),
+          size: 20,
+        ),
+        selectedIconTheme: const IconThemeData(
+          color: Colors.white,
+          size: 20,
+        ),
+      ),
+      extendedTheme: const SidebarXTheme(
+        width: 200,
+        decoration: BoxDecoration(
+          color: canvasColor,
+        ),
+      ),
+      footerDivider: divider,
+      items: [
+        SidebarXItem(
+          icon: Icons.home,
+          label: 'Home',
+          onTap: () {
+            debugPrint('Home');
+          },
+        ),
+        const SidebarXItem(
+          icon: Icons.search,
+          label: 'Search',
+        ),
+        const SidebarXItem(
+          icon: Icons.my_library_music,
+          label: 'Library',
+        ),
+        const SidebarXItem(
+          icon: Icons.reviews,
+          label: 'Reviews',
+        ),
+        const SidebarXItem(
+          icon: Icons.shop,
+          label: 'Store',
+        ),
+        const SidebarXItem(
+          icon: Icons.settings,
+          label: 'Settings',
+        ),
+      ],
+    );
+  }
+}
+
 // Define a global key for the navigator
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -422,8 +527,18 @@ class MainScreen extends StatefulWidget {
   _MainScreenState createState() => _MainScreenState();
 }
 
-class _MainScreenState extends State<MainScreen> {
+class _MainScreenState extends State<MainScreen>
+    with SingleTickerProviderStateMixin {
   var _playbackManager = PlaybackManager();
+  var sidebarController = SidebarXController(selectedIndex: 0);
+  int _selectedIndex = 0; // Default index
+  late TabController _tabController;
+
+  void _onSidebarItemTapped(int index) {
+    setState(() {
+      _selectedIndex = index;
+    });
+  }
 
   @override
   void initState() {
@@ -438,50 +553,144 @@ class _MainScreenState extends State<MainScreen> {
         });
       });
     });
+    _tabController = TabController(
+        length: 4, vsync: this); // Adjust length based on the number of tabs
 
     super.initState();
   }
 
   @override
   void dispose() {
+    _tabController.dispose();
+
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('App Bar with Search'),
-        actions: <Widget>[
-          IconButton(
-            icon: Icon(Icons.search),
-            onPressed: () {
-              startServer();
-// You can pick your own id or omit the id if you want to get a random one from the server.
-            },
+      backgroundColor: Color(0xFF1c1a1e),
+      body: Row(
+        children: [
+          SidebarX(
+            controller: sidebarController,
+            theme: SidebarXTheme(
+              margin: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: canvasColor,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              hoverColor: scaffoldBackgroundColor,
+              textStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
+              selectedTextStyle: const TextStyle(color: Colors.white),
+              itemTextPadding: const EdgeInsets.only(left: 30),
+              selectedItemTextPadding: const EdgeInsets.only(left: 30),
+              itemDecoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: canvasColor),
+              ),
+              selectedItemDecoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: actionColor.withOpacity(0.37),
+                ),
+                gradient: const LinearGradient(
+                  colors: [accentCanvasColor, canvasColor],
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.28),
+                    blurRadius: 30,
+                  )
+                ],
+              ),
+              iconTheme: IconThemeData(
+                color: Colors.white.withOpacity(0.7),
+                size: 20,
+              ),
+              selectedIconTheme: const IconThemeData(
+                color: Colors.white,
+                size: 20,
+              ),
+            ),
+            extendedTheme: const SidebarXTheme(
+              width: 200,
+              decoration: BoxDecoration(
+                color: canvasColor,
+              ),
+            ),
+            footerDivider: divider,
+            items: [
+              SidebarXItem(
+                icon: Icons.home,
+                label: 'Home',
+                onTap: () {
+                  debugPrint('Home');
+                },
+              ),
+              SidebarXItem(
+                  icon: Icons.search,
+                  label: 'Search',
+                  onTap: () async {
+                    setState(() {
+                      _tabController.index = 1;
+                    });
+                  }),
+              SidebarXItem(
+                  icon: Icons.my_library_music,
+                  label: 'Library',
+                  onTap: () async {
+                    setState(() {
+                      _tabController.index = 0;
+                    });
+                  }),
+              const SidebarXItem(
+                icon: Icons.reviews,
+                label: 'Reviews',
+              ),
+              SidebarXItem(
+                  icon: Icons.shop,
+                  label: 'Store',
+                  onTap: () async {
+                    navigatorKey.currentState!.push(
+                        MaterialPageRoute(builder: (context) => StorePage()));
+                  }),
+              const SidebarXItem(
+                icon: Icons.settings,
+                label: 'Settings',
+              ),
+            ],
           ),
-          IconButton(
-            icon: Icon(Icons.connect_without_contact),
-            onPressed: () {
-              testServerConnection();
-// You can pick your own id or omit the id if you want to get a random one from the server.
-            },
-          )
+          Expanded(
+            child: Center(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(
+                    10), // Adjust the radius for more or less rounded corners
+                child: Container(
+                  // Adds space around the container, preventing it from touching the window edges
+                  child: Padding(
+                    padding: const EdgeInsets.all(
+                        8.0), // Adjust the padding as needed
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(
+                          18), // Slightly smaller radius for the Navigator to ensure the Container's border is visible
+                      child: TabBarView(
+                        controller: _tabController,
+                        children: [
+                          MusicLibraryPage(), // Adjust these widgets as necessary
+                          SearchTab(),
+                          MusicLibraryPage(), // Example placeholder for the Library page
+                          StorePage(),
+                          // Add more widgets as needed
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
         ],
-      ),
-      body: Navigator(
-        key: navigatorKey,
-        onGenerateRoute: (RouteSettings settings) {
-          WidgetBuilder builder;
-          switch (settings.name) {
-            case '/':
-              builder = (BuildContext context) => MusicLibraryPage();
-              break;
-            default:
-              throw Exception('Invalid route: ${settings.name}');
-          }
-          return MaterialPageRoute(builder: builder, settings: settings);
-        },
       ),
       bottomNavigationBar: BottomAppBar(
         height: 104,
@@ -603,5 +812,18 @@ class _MainScreenState extends State<MainScreen> {
         ),
       ),
     );
+  }
+
+  Widget _buildContentBasedOnIndex(int index) {
+    // Switch case to determine which widget to display
+    switch (index) {
+      case 0:
+        return MusicLibraryPage(); // Replace with your actual widget
+      case 1:
+        return MusicLibraryPage(); // Replace with other pages for different indexes
+      // Add more cases for additional indexes
+      default:
+        return Placeholder(); // Fallback widget
+    }
   }
 }

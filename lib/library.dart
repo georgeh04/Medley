@@ -11,8 +11,9 @@ class MusicLibraryPage extends StatefulWidget {
 }
 
 class _MusicLibraryPageState extends State<MusicLibraryPage>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, AutomaticKeepAliveClientMixin {
   TabController? _tabController;
+  bool get wantKeepAlive => true; // Indicates you want to keep the state alive
 
   @override
   void initState() {
@@ -28,6 +29,9 @@ class _MusicLibraryPageState extends State<MusicLibraryPage>
 
   @override
   Widget build(BuildContext context) {
+    super.build(
+        context); // This is required when using AutomaticKeepAliveClientMixin
+
     return Scaffold(
       appBar: TabBar(
         controller: _tabController,

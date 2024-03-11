@@ -1,7 +1,9 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+import 'package:medleylibrary/ArtistPage.dart';
 import 'package:medleylibrary/db.dart'; // Ensure this file has the necessary functions to interact with the database
+import 'package:medleylibrary/main.dart';
 import 'library.dart';
 
 import 'audiomanager.dart';
@@ -62,7 +64,9 @@ class _AlbumPageState extends State<AlbumPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(),
+      appBar: AppBar(
+        title: Text("Album Details"), // Providing context for the page
+      ),
       body: FutureBuilder<Album>(
         future: fetchAlbum(),
         builder: (context, albumSnapshot) {
@@ -71,65 +75,94 @@ class _AlbumPageState extends State<AlbumPage> {
           } else if (albumSnapshot.hasError) {
             return Text("Error: ${albumSnapshot.error}");
           } else if (albumSnapshot.hasData) {
-            return Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  alignment: Alignment.center,
-                  width: 300,
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Image.network(albumSnapshot.data!.coverUrl),
-                      SizedBox(height: 16),
-                      Text(albumSnapshot.data!.title,
-                          style: Theme.of(context).textTheme.headline5,
-                          textAlign: TextAlign.center),
-                      Text(albumSnapshot.data!.artistName,
-                          style: Theme.of(context).textTheme.subtitle1,
-                          textAlign: TextAlign.center),
-                    ],
-                  ),
-                ),
-                SizedBox(width: 128),
-                Container(
-                  width: 300,
-                  child: SingleChildScrollView(
-                    child: FutureBuilder<List<Song>>(
-                      future: fetchSongsForAlbum(widget.albumId),
-                      builder: (context, songsSnapshot) {
-                        if (songsSnapshot.connectionState ==
-                            ConnectionState.waiting) {
-                          return CircularProgressIndicator();
-                        } else if (songsSnapshot.hasError) {
-                          return Text("Error: ${songsSnapshot.error}");
-                        } else if (songsSnapshot.hasData) {
-                          return ListView.builder(
-                            physics:
-                                NeverScrollableScrollPhysics(), // Disable scrolling within the ListView
-                            shrinkWrap:
-                                true, // Allow ListView to size itself properly within the Column
-                            itemCount: songsSnapshot.data!.length,
-                            itemBuilder: (context, index) {
-                              Song song = songsSnapshot.data![index];
-                              return ListTile(
-                                leading: Text(song.trackNumber.toString()),
-                                title: Text(song.title),
-                                onTap: () {
-                                  PlaybackManager().playAlbumFromTrack(
-                                      songsSnapshot.data!, index);
-                                },
-                              );
-                            },
-                          );
-                        } else {
-                          return Text("No songs found");
-                        }
-                      },
+            return SingleChildScrollView(
+              child: Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Row(
+                      children: [
+                        Image.network(albumSnapshot.data!.coverUrl,
+                            height: 200), // Adjusted size for better layout
+                        SizedBox(
+                          height: 16,
+                          width: 16,
+                        ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(albumSnapshot.data!.title,
+                                style:
+                                    Theme.of(context).textTheme.headlineLarge),
+                            SizedBox(
+                              height: 16,
+                            ),
+                            Row(
+                              children: [
+                                TextButton(
+                                  child: Text(
+                                    albumSnapshot.data!.artistName,
+                                    style:
+                                        Theme.of(context).textTheme.titleSmall,
+                                  ),
+                                  onPressed: () {
+                                    navigatorKey.currentState!.push(
+                                        MaterialPageRoute(
+                                            builder: (context) => ArtistPage(
+                                                artistId: albumSnapshot
+                                                    .data!.artistId,
+                                                artistName: albumSnapshot
+                                                    .data!.artistName)));
+                                  },
+                                ),
+                                Text('|   21 Tracks  |  2004')
+                              ],
+                            )
+
+                            // Additional album details (release year, genre, etc.) can be added here],)
+                          ],
+                        ),
+                      ],
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
                     ),
                   ),
-                ),
-              ],
+                  FutureBuilder<List<Song>>(
+                    future: fetchSongsForAlbum(widget.albumId),
+                    builder: (context, songsSnapshot) {
+                      if (songsSnapshot.connectionState ==
+                          ConnectionState.waiting) {
+                        return CircularProgressIndicator();
+                      } else if (songsSnapshot.hasError) {
+                        return Text("Error: ${songsSnapshot.error}");
+                      } else if (songsSnapshot.hasData) {
+                        return ListView.builder(
+                          physics:
+                              NeverScrollableScrollPhysics(), // Keep disabled scrolling
+                          shrinkWrap:
+                              true, // Ensure proper sizing within a Column
+                          itemCount: songsSnapshot.data!.length,
+                          itemBuilder: (context, index) {
+                            Song song = songsSnapshot.data![index];
+                            return ListTile(
+                              leading: Text(song.trackNumber.toString()),
+                              title: Text(song.title),
+                              onTap: () {
+                                // Assuming PlaybackManager() has a method to play a specific song
+                                PlaybackManager().playAlbumFromTrack(
+                                    songsSnapshot.data!, index);
+                              },
+                            );
+                          },
+                        );
+                      } else {
+                        return Text("No songs found");
+                      }
+                    },
+                  ),
+                  // Here you would add components for rating, reviews, and related albums
+                ],
+              ),
             );
           } else {
             return Text("No album found");
