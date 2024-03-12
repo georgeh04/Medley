@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:medleylibrary/AlbumPage.dart';
+import 'package:medleylibrary/PlaylistPage.dart';
 import 'library.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:io';
@@ -519,6 +520,45 @@ class ExampleSidebarX extends StatelessWidget {
   }
 }
 
+void showSettingsDialog(BuildContext context, Function(String) onChanged) {
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return SizedBox(
+        width: 600,
+        height: 400,
+        child: AlertDialog(
+          title: Text('Settings'),
+          content: SingleChildScrollView(
+            child: ListBody(
+              children: [
+                OutlinedButton(
+                  onPressed: () {
+                    pickAndScanMusicFolder(context).then((_) {
+                      // If you're directly updating data that MusicLibraryPage reads,
+                      // simply calling setState here will refresh the data.
+                      onChanged("Resync Library"); // Call the callback function
+                    });
+                  },
+                  child: Text('Resync Library'),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text('Close'),
+            ),
+          ],
+        ),
+      );
+    },
+  );
+}
+
 // Define a global key for the navigator
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
@@ -564,6 +604,14 @@ class _MainScreenState extends State<MainScreen>
     _tabController.dispose();
 
     super.dispose();
+  }
+
+  Future createPlaylist(String name, int userId) async {
+    var db = await openDb();
+    await db.insert('Playlists', {
+      'name': name,
+      'userId': userId,
+    });
   }
 
   @override
@@ -632,33 +680,44 @@ class _MainScreenState extends State<MainScreen>
                   icon: Icons.search,
                   label: 'Search',
                   onTap: () async {
-                    setState(() {
-                      _tabController.index = 1;
-                    });
+                    navigatorKey.currentState!.pushNamed(
+                      '/search',
+                    );
                   }),
               SidebarXItem(
                   icon: Icons.my_library_music,
                   label: 'Library',
                   onTap: () async {
-                    setState(() {
-                      _tabController.index = 0;
-                    });
+                    navigatorKey.currentState!.pushNamed(
+                      '/',
+                    );
+                  }),
+              SidebarXItem(
+                  icon: Icons.playlist_play,
+                  label: 'Playlists',
+                  onTap: () async {
+                    navigatorKey.currentState!.pushNamed(
+                      '/playlist',
+                    );
                   }),
               const SidebarXItem(
                 icon: Icons.reviews,
                 label: 'Reviews',
               ),
               SidebarXItem(
-                  icon: Icons.shop,
-                  label: 'Store',
+                  icon: Icons.plus_one,
+                  label: 'Playlistadd',
                   onTap: () async {
-                    navigatorKey.currentState!.push(
-                        MaterialPageRoute(builder: (context) => StorePage()));
+                    createPlaylist('Test Playlist', 9);
                   }),
-              const SidebarXItem(
-                icon: Icons.settings,
-                label: 'Settings',
-              ),
+              SidebarXItem(
+                  icon: Icons.settings,
+                  label: 'Settings',
+                  onTap: () {
+                    showSettingsDialog(context, (String val) {
+                      setState(() {});
+                    });
+                  }),
             ],
           ),
           Expanded(
@@ -672,19 +731,40 @@ class _MainScreenState extends State<MainScreen>
                     padding: const EdgeInsets.all(
                         8.0), // Adjust the padding as needed
                     child: ClipRRect(
-                      borderRadius: BorderRadius.circular(
-                          18), // Slightly smaller radius for the Navigator to ensure the Container's border is visible
-                      child: TabBarView(
-                        controller: _tabController,
-                        children: [
-                          MusicLibraryPage(), // Adjust these widgets as necessary
-                          SearchTab(),
-                          MusicLibraryPage(), // Example placeholder for the Library page
-                          StorePage(),
-                          // Add more widgets as needed
-                        ],
-                      ),
-                    ),
+                        borderRadius: BorderRadius.circular(
+                            18), // Slightly smaller radius for the Navigator to ensure the Container's border is visible
+                        child: Navigator(
+                          key: navigatorKey,
+                          initialRoute: '/',
+                          onGenerateRoute: (RouteSettings settings) {
+                            switch (settings.name) {
+                              case '/':
+                                return MaterialPageRoute(
+                                  builder: (context) => MusicLibraryPage(),
+                                );
+                              case '/album':
+                                final Object? arguments = settings.arguments;
+                                if (arguments is int) {
+                                  return MaterialPageRoute(
+                                    builder: (context) => AlbumPage(
+                                      albumId: arguments,
+                                    ),
+                                  );
+                                }
+                                ;
+                              case '/search':
+                                return MaterialPageRoute(
+                                    builder: ((context) => SearchPage()));
+                              case '/artist':
+                                return MaterialPageRoute(
+                                  builder: (context) => MusicLibraryPage(),
+                                );
+                              case '/playlist':
+                                return MaterialPageRoute(
+                                    builder: ((context) => PlaylistPage()));
+                            }
+                          },
+                        )),
                   ),
                 ),
               ),
@@ -694,7 +774,7 @@ class _MainScreenState extends State<MainScreen>
       ),
       bottomNavigationBar: BottomAppBar(
         height: 104,
-        child: ValueListenableBuilder<Song?>(
+        child: ValueListenableBuilder(
           valueListenable: _playbackManager.currentSongNotifier,
           builder: (context, currentSong, child) {
             return Row(
@@ -711,42 +791,48 @@ class _MainScreenState extends State<MainScreen>
                           mainAxisAlignment: MainAxisAlignment.center,
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Flexible(
-                                fit: FlexFit.tight,
-                                child: TextButton(
-                                  onPressed: () {
-                                    navigatorKey.currentState!.push(
-                                        MaterialPageRoute(
-                                            builder: (context) => AlbumPage(
-                                                albumId: currentSong.albumId)));
-                                  },
-                                  child: Text(
-                                    currentSong.title,
-                                    overflow: TextOverflow.ellipsis,
-                                    textWidthBasis: TextWidthBasis.values[1],
-                                    maxLines: 1,
-                                    softWrap: true,
-                                  ),
-                                )),
-                            Flexible(
-                                child: TextButton(
-                              onPressed: () {
-                                navigatorKey.currentState!
-                                    .push(MaterialPageRoute(
-                                        builder: (context) => ArtistPage(
-                                              artistId: currentSong.albumId,
-                                              artistName:
-                                                  currentSong.artistName,
-                                            )));
-                              },
-                              child: Text(
-                                currentSong.artistName,
-                                style: TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w300,
-                                    color: Colors.grey),
+                            Container(
+                              width: 150, // Set the width of the TextButton
+                              alignment: Alignment
+                                  .centerLeft, // Align the text to the left
+                              child: TextButton(
+                                onPressed: () {
+                                  navigatorKey.currentState!.push(
+                                    MaterialPageRoute(
+                                      builder: (context) => AlbumPage(
+                                        albumId: currentSong.albumId,
+                                      ),
+                                    ),
+                                  );
+                                },
+                                child: Text(
+                                  currentSong.title,
+                                  overflow: TextOverflow.ellipsis,
+                                  maxLines: 1,
+                                  softWrap: true,
+                                ),
                               ),
-                            ))
+                            ),
+                            Flexible(
+                              child: TextButton(
+                                onPressed: () {
+                                  navigatorKey.currentState!
+                                      .push(MaterialPageRoute(
+                                          builder: (context) => ArtistPage(
+                                                artistId: currentSong.albumId,
+                                                artistName:
+                                                    currentSong.artistName,
+                                              )));
+                                },
+                                child: Text(
+                                  currentSong.artistName,
+                                  style: TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w300,
+                                      color: Colors.grey),
+                                ),
+                              ),
+                            )
                           ],
                         ),
                     ]),
@@ -766,7 +852,7 @@ class _MainScreenState extends State<MainScreen>
                                 icon: Icon(Icons.skip_previous),
                                 onPressed: () => _playbackManager.previous(),
                               ),
-                              ValueListenableBuilder<bool>(
+                              ValueListenableBuilder(
                                 valueListenable: _playbackManager.isPlaying,
                                 builder: (context, isPlaying, child) {
                                   return IconButton(

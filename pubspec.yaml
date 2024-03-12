@@ -53,6 +53,8 @@ dependencies:
   permission_handler: ^11.3.0
   peerdart: ^0.5.4
   sidebarx: ^0.16.3
+  marquee: ^2.2.3
+  flutter_secure_storage: ^9.0.0
 
 dev_dependencies:
   flutter_test:

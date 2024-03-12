@@ -7,6 +7,8 @@ PODS:
     - FlutterMacOS
   - desktop_window (0.0.1):
     - FlutterMacOS
+  - flutter_secure_storage_macos (6.1.1):
+    - FlutterMacOS
   - flutter_webrtc (0.9.36):
     - FlutterMacOS
     - WebRTC-SDK (= 114.5735.08)
@@ -45,6 +47,7 @@ DEPENDENCIES:
   - audio_session (from `Flutter/ephemeral/.symlinks/plugins/audio_session/macos`)
   - audioplayers_darwin (from `Flutter/ephemeral/.symlinks/plugins/audioplayers_darwin/macos`)
   - desktop_window (from `Flutter/ephemeral/.symlinks/plugins/desktop_window/macos`)
+  - flutter_secure_storage_macos (from `Flutter/ephemeral/.symlinks/plugins/flutter_secure_storage_macos/macos`)
   - flutter_webrtc (from `Flutter/ephemeral/.symlinks/plugins/flutter_webrtc/macos`)
   - FlutterMacOS (from `Flutter/ephemeral`)
   - just_audio (from `Flutter/ephemeral/.symlinks/plugins/just_audio/macos`)
@@ -68,6 +71,8 @@ EXTERNAL SOURCES:
     :path: Flutter/ephemeral/.symlinks/plugins/audioplayers_darwin/macos
   desktop_window:
     :path: Flutter/ephemeral/.symlinks/plugins/desktop_window/macos
+  flutter_secure_storage_macos:
+    :path: Flutter/ephemeral/.symlinks/plugins/flutter_secure_storage_macos/macos
   flutter_webrtc:
     :path: Flutter/ephemeral/.symlinks/plugins/flutter_webrtc/macos
   FlutterMacOS:
@@ -90,6 +95,7 @@ SPEC CHECKSUMS:
   audio_session: dea1f41890dbf1718f04a56f1d6150fd50039b72
   audioplayers_darwin: dcad41de4fbd0099cb3749f7ab3b0cb8f70b810c
   desktop_window: fb7c4f12c1129f947ac482296b6f14059d57a3c3
+  flutter_secure_storage_macos: d56e2d218c1130b262bef8b4a7d64f88d7f9c9ea
   flutter_webrtc: cf7dc44d26cbb5c5f1ae5f583dab545871f287f9
   FlutterMacOS: 8f6f14fa908a6fb3fba0cd85dbd81ec4b251fb24
   just_audio: 9b67ca7b97c61cfc9784ea23cd8cc55eb226d489

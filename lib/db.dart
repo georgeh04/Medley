@@ -67,6 +67,24 @@ Future<void> _createDb(Database db) async {
       FOREIGN KEY (albumId) REFERENCES Albums(id)
     )
   ''');
+
+  await db.execute('''
+     CREATE TABLE Playlists (
+       id INTEGER PRIMARY KEY,
+       name TEXT,
+       userId INTEGER
+     )
+   ''');
+
+  await db.execute('''
+     CREATE TABLE PlaylistSongs (
+       id INTEGER PRIMARY KEY,
+       playlistId INTEGER,
+       songId INTEGER,
+       FOREIGN KEY (playlistId) REFERENCES Playlists(id),
+       FOREIGN KEY (songId)  REFERENCES Songs(id)
+     )
+   ''');
 }
 
 Future<void> findMusicFiles(Directory directory,

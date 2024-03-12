@@ -3,6 +3,7 @@ import 'package:flutter/widgets.dart';
 import 'package:medleylibrary/AlbumPage.dart';
 import 'package:medleylibrary/db.dart'; // Ensure this file has the necessary functions to interact with the database
 import 'ArtistPage.dart';
+import 'package:sqflite/sqflite.dart';
 import 'audiomanager.dart';
 
 class MusicLibraryPage extends StatefulWidget {
@@ -25,6 +26,22 @@ class _MusicLibraryPageState extends State<MusicLibraryPage>
   void dispose() {
     _tabController?.dispose();
     super.dispose();
+  }
+
+  Future addSongToPlaylist(int playlistId, int songId) async {
+    final path = await getDatabasesPath();
+    final db = await openDb();
+
+    await db.insert('PlaylistSongs', {
+      'playlistId': playlistId,
+      'songId': songId,
+    });
+
+    final result = await db.query('PlaylistSongs');
+
+    for (final row in result) {
+      print('PlaylistId: ${result}');
+    }
   }
 
   @override
@@ -88,17 +105,34 @@ class _MusicLibraryPageState extends State<MusicLibraryPage>
                   itemCount: snapshot.data!.length,
                   itemBuilder: (context, index) {
                     Song song = snapshot.data![index];
-                    return ListTile(
-                      leading: Container(
-                        child: Image.network(song.coverUrl),
-                      ),
-                      title: Text(song.title),
-                      subtitle: Text(song
-                          .artistName), // Assuming Song has an artistName field
-                      onTap: () {
-                        PlaybackManager().playSongObject(song);
-                      },
-                    );
+                    return GestureDetector(
+                        onSecondaryTap: () {
+                          showMenu(
+                            color: Colors.grey,
+                            context: context,
+                            position: RelativeRect.fill,
+                            items: [
+                              PopupMenuItem(
+                                value: 'edit',
+                                child: Text('Add to Playlist'),
+                                onTap: () {
+                                  addSongToPlaylist(9, song.id);
+                                },
+                              ),
+                            ],
+                          );
+                        },
+                        child: ListTile(
+                          leading: Container(
+                            child: Image.network(song.coverUrl),
+                          ),
+                          title: Text(song.title),
+                          subtitle: Text(song
+                              .artistName), // Assuming Song has an artistName field
+                          onTap: () {
+                            PlaybackManager().playSongObject(song);
+                          },
+                        ));
                   },
                 );
               } else {
@@ -125,11 +159,8 @@ class _MusicLibraryPageState extends State<MusicLibraryPage>
                       subtitle: Text(album
                           .artistName), // Assuming Album has an artistName field
                       onTap: () {
-                        Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                                builder: (context) =>
-                                    AlbumPage(albumId: album.id)));
+                        Navigator.of(context)
+                            .pushNamed('/album', arguments: album.id);
                       },
                     );
                   },
@@ -223,6 +254,31 @@ class Album {
       artistName: map['artistName'],
       coverUrl: map['coverUrl'],
     );
+  }
+}
+
+Future getDatabaseSchema(Database database) async {
+  // Get the database info
+  var info = await database.rawQuery('PRAGMA database_list');
+  var dbName = info.first['name'];
+
+  // Get the table names
+  var tableNames = await database
+      .rawQuery('SELECT name FROM sqlite_master WHERE type="table"');
+
+  // For each table, get the schema
+  for (var table in tableNames) {
+    var tableName = table['name'];
+
+    // Get the table schema
+    var schema = await database.rawQuery('PRAGMA table_info($tableName)');
+
+    // Print the table name and schema
+    print('Table: $tableName');
+    print('Schema:');
+    for (var row in schema) {
+      print('  - ${row['name']}: ${row['type']}');
+    }
   }
 }
 

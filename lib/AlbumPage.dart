@@ -124,9 +124,10 @@ class _AlbumPageState extends State<AlbumPage> {
                         ),
                       ],
                       mainAxisAlignment: MainAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
+                      mainAxisSize: MainAxisSize.max,
                     ),
                   ),
+                  Divider(),
                   FutureBuilder<List<Song>>(
                     future: fetchSongsForAlbum(widget.albumId),
                     builder: (context, songsSnapshot) {
