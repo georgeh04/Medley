@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:medleylibrary/AlbumPage.dart';
 import 'package:medleylibrary/PlaylistPage.dart';
 import 'library.dart';
@@ -18,8 +19,13 @@ import 'p2p.dart';
 import 'SearchPage.dart';
 import 'package:sidebarx/sidebarx.dart';
 import 'Store.dart';
-
+import 'package:window_manager/window_manager.dart';
+import 'package:desktop_window/desktop_window.dart';
 import 'dart:io' show Platform;
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:crypto/crypto.dart';
 
 import 'package:permission_handler/permission_handler.dart';
 
@@ -45,6 +51,20 @@ void main() async {
     ),
   );
   WidgetsFlutterBinding.ensureInitialized();
+
+  await windowManager.ensureInitialized();
+
+  WindowOptions windowOptions = WindowOptions(
+    size: Size(800, 600),
+    center: true,
+    backgroundColor: Colors.transparent,
+    skipTaskbar: false,
+    titleBarStyle: TitleBarStyle.normal,
+  );
+  windowManager.waitUntilReadyToShow(windowOptions, () async {
+    await windowManager.show();
+    await windowManager.focus();
+  });
 
   if (Platform.isMacOS || Platform.isWindows) {
     await DesktopWindow.setMinWindowSize(Size(800, 600));
@@ -520,6 +540,132 @@ class ExampleSidebarX extends StatelessWidget {
   }
 }
 
+void connectToLastFm(BuildContext context) {
+  showDialog(
+    context: context,
+    builder: (BuildContext context) {
+      return AlertDialog(
+        title: Text('Connect to Last.fm'),
+        content: SingleChildScrollView(
+          child: ListBody(
+            children: [
+              Text(
+                  'To scrobble music, you need to connect your Last.fm account.'),
+              OutlinedButton(
+                onPressed: () {
+                  requestLastFmToken('cad200fbadbeb49cbd8b060607a0ccf5')
+                      .then((token) {
+                    print(token);
+
+                    authorizeLastFmUser(token).then((_) {
+                      // After the user authorizes the app, fetch the session key.
+                      fetchLastFmSessionKey().then((sessionKey) {
+                        // Store the session key for future requests and close the dialog.
+                        // You might want to use a secure storage solution for storing the session key.
+                        Navigator.of(context).pop();
+                        // Optionally, notify the user of a successful connection.
+                      });
+                    });
+                  });
+                },
+                child: Text('Connect to Last.fm'),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            child: Text('Close'),
+          ),
+        ],
+      );
+    },
+  );
+}
+
+String generateApiSignature(Map<String, dynamic> params, String secret) {
+  var sortedKeys = params.keys.toList()..sort();
+  var paramString =
+      sortedKeys.fold('', (prev, key) => '$prev$key${params[key]}');
+  var finalString = '$paramString$secret';
+  print(finalString);
+  return md5.convert(utf8.encode(finalString)).toString();
+}
+
+Future<void> openBrowserPage(String url) async {
+  if (!await launchUrl(Uri.parse(url))) {
+    print('Could not launch $url');
+  }
+}
+
+Future<String?> requestLastFmToken(String apiKey) async {
+  final response = await http.get(
+    Uri.parse(
+        'http://ws.audioscrobbler.com/2.0/?method=auth.getToken&api_key=$apiKey&format=json'),
+  );
+
+  if (response.statusCode == 200) {
+    final data = jsonDecode(response.body);
+    return data['token'];
+  } else {
+    // Handle error or return null
+    print('Failed to obtain token');
+    return null;
+  }
+}
+
+Future<void> authorizeLastFmUser(var token) async {
+  openBrowserPage(
+      'http://www.last.fm/api/auth/?api_key=cad200fbadbeb49cbd8b060607a0ccf5&token=$token');
+  var apisig = await generateApiSignature({
+    'api_key': 'cad200fbadbeb49cbd8b060607a0ccf5',
+    'method': 'auth.getSession',
+    'token': token,
+  }, '83a6ae544f0729705292a12699d92c58');
+  bool shouldContinue = true;
+  while (shouldContinue) {
+    final response = await fetchWebServiceSession(
+        'cad200fbadbeb49cbd8b060607a0ccf5', token, apisig);
+    if (response != null) {
+      print('response here bb : $response');
+      final responseJson = jsonDecode(response);
+      if (responseJson['error'] != 14) {
+        print('key here ${responseJson['message']}');
+        shouldContinue = false;
+      } else {
+        await Future.delayed(Duration(seconds: 5));
+      }
+    }
+  }
+}
+
+Future<String?> fetchWebServiceSession(
+    String apiKey, String token, String apiSig) async {
+  final url = Uri.parse('http://ws.audioscrobbler.com/2.0/');
+  final response = await http.post(url, body: {
+    'method': 'auth.getSession',
+    'api_key': apiKey,
+    'token': token,
+    'api_sig': apiSig,
+    'format': 'json',
+  });
+
+  if (response.statusCode == 200) {
+    final data = jsonDecode(response.body);
+    return data['session']
+        ['key']; // Extracting the session key from the response
+  } else {
+    // Error handling
+    print('Failed to fetch web service session: ${response.body}');
+    return null;
+  }
+}
+
+Future<String?> fetchLastFmSessionKey() async {}
+
 void showSettingsDialog(BuildContext context, Function(String) onChanged) {
   showDialog(
     context: context,
@@ -541,6 +687,16 @@ void showSettingsDialog(BuildContext context, Function(String) onChanged) {
                     });
                   },
                   child: Text('Resync Library'),
+                ),
+                SizedBox(
+                  height: 8,
+                ),
+                OutlinedButton(
+                  onPressed: () {
+                    // Implement the function to initiate the Last.fm authentication flow
+                    connectToLastFm(context);
+                  },
+                  child: Text('Connect to Last.fm'),
                 ),
               ],
             ),
@@ -573,6 +729,8 @@ class _MainScreenState extends State<MainScreen>
   var sidebarController = SidebarXController(selectedIndex: 0);
   int _selectedIndex = 0; // Default index
   late TabController _tabController;
+  final FocusNode _focusNode = FocusNode();
+  bool isFullScreen = false;
 
   void _onSidebarItemTapped(int index) {
     setState(() {
@@ -614,163 +772,173 @@ class _MainScreenState extends State<MainScreen>
     });
   }
 
+  void _toggleFullScreen() async {
+    await WindowManager.instance.setFullScreen(!isFullScreen);
+    isFullScreen = !isFullScreen;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Color(0xFF1c1a1e),
-      body: Row(
-        children: [
-          SidebarX(
-            controller: sidebarController,
-            theme: SidebarXTheme(
-              margin: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: canvasColor,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              hoverColor: scaffoldBackgroundColor,
-              textStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
-              selectedTextStyle: const TextStyle(color: Colors.white),
-              itemTextPadding: const EdgeInsets.only(left: 30),
-              selectedItemTextPadding: const EdgeInsets.only(left: 30),
-              itemDecoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: canvasColor),
-              ),
-              selectedItemDecoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                  color: actionColor.withOpacity(0.37),
+      body: KeyboardListener(
+        focusNode: _focusNode,
+        onKeyEvent: (KeyEvent event) {
+          if (event is KeyDownEvent) {
+            if ((event.logicalKey == LogicalKeyboardKey.enter &&
+                    event.logicalKey == LogicalKeyboardKey.alt) ||
+                event.logicalKey == LogicalKeyboardKey.f11) {
+              _toggleFullScreen();
+            }
+          }
+        },
+        child: Row(
+          children: [
+            SidebarX(
+              controller: sidebarController,
+              theme: SidebarXTheme(
+                margin: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: canvasColor,
+                  borderRadius: BorderRadius.circular(20),
                 ),
-                gradient: const LinearGradient(
-                  colors: [accentCanvasColor, canvasColor],
+                hoverColor: scaffoldBackgroundColor,
+                textStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
+                selectedTextStyle: const TextStyle(color: Colors.white),
+                itemTextPadding: const EdgeInsets.only(left: 30),
+                selectedItemTextPadding: const EdgeInsets.only(left: 30),
+                itemDecoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: canvasColor),
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.28),
-                    blurRadius: 30,
-                  )
-                ],
+                selectedItemDecoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: actionColor.withOpacity(0.37),
+                  ),
+                  gradient: const LinearGradient(
+                    colors: [accentCanvasColor, canvasColor],
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.28),
+                      blurRadius: 30,
+                    )
+                  ],
+                ),
+                iconTheme: IconThemeData(
+                  color: Colors.white.withOpacity(0.7),
+                  size: 20,
+                ),
+                selectedIconTheme: const IconThemeData(
+                  color: Colors.white,
+                  size: 20,
+                ),
               ),
-              iconTheme: IconThemeData(
-                color: Colors.white.withOpacity(0.7),
-                size: 20,
+              extendedTheme: const SidebarXTheme(
+                width: 200,
+                decoration: BoxDecoration(
+                  color: canvasColor,
+                ),
               ),
-              selectedIconTheme: const IconThemeData(
-                color: Colors.white,
-                size: 20,
-              ),
+              footerDivider: divider,
+              items: [
+                SidebarXItem(
+                    icon: Icons.search,
+                    label: 'Search',
+                    onTap: () async {
+                      navigatorKey.currentState!.pushNamed(
+                        '/search',
+                      );
+                    }),
+                SidebarXItem(
+                    icon: Icons.my_library_music,
+                    label: 'Library',
+                    onTap: () async {
+                      navigatorKey.currentState!.pushNamed(
+                        '/',
+                      );
+                    }),
+                SidebarXItem(
+                    icon: Icons.playlist_play,
+                    label: 'Playlists',
+                    onTap: () async {
+                      navigatorKey.currentState!.pushNamed(
+                        '/playlist',
+                      );
+                    }),
+                const SidebarXItem(
+                  icon: Icons.reviews,
+                  label: 'Reviews',
+                ),
+                SidebarXItem(
+                    icon: Icons.plus_one,
+                    label: 'Playlistadd',
+                    onTap: () async {
+                      createPlaylist('Test Playlist', 9);
+                    }),
+                SidebarXItem(
+                    icon: Icons.settings,
+                    label: 'Settings',
+                    onTap: () {
+                      showSettingsDialog(context, (String val) {
+                        setState(() {});
+                      });
+                    }),
+              ],
             ),
-            extendedTheme: const SidebarXTheme(
-              width: 200,
-              decoration: BoxDecoration(
-                color: canvasColor,
-              ),
-            ),
-            footerDivider: divider,
-            items: [
-              SidebarXItem(
-                icon: Icons.home,
-                label: 'Home',
-                onTap: () {
-                  debugPrint('Home');
-                },
-              ),
-              SidebarXItem(
-                  icon: Icons.search,
-                  label: 'Search',
-                  onTap: () async {
-                    navigatorKey.currentState!.pushNamed(
-                      '/search',
-                    );
-                  }),
-              SidebarXItem(
-                  icon: Icons.my_library_music,
-                  label: 'Library',
-                  onTap: () async {
-                    navigatorKey.currentState!.pushNamed(
-                      '/',
-                    );
-                  }),
-              SidebarXItem(
-                  icon: Icons.playlist_play,
-                  label: 'Playlists',
-                  onTap: () async {
-                    navigatorKey.currentState!.pushNamed(
-                      '/playlist',
-                    );
-                  }),
-              const SidebarXItem(
-                icon: Icons.reviews,
-                label: 'Reviews',
-              ),
-              SidebarXItem(
-                  icon: Icons.plus_one,
-                  label: 'Playlistadd',
-                  onTap: () async {
-                    createPlaylist('Test Playlist', 9);
-                  }),
-              SidebarXItem(
-                  icon: Icons.settings,
-                  label: 'Settings',
-                  onTap: () {
-                    showSettingsDialog(context, (String val) {
-                      setState(() {});
-                    });
-                  }),
-            ],
-          ),
-          Expanded(
-            child: Center(
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(
-                    10), // Adjust the radius for more or less rounded corners
-                child: Container(
-                  // Adds space around the container, preventing it from touching the window edges
-                  child: Padding(
-                    padding: const EdgeInsets.all(
-                        8.0), // Adjust the padding as needed
-                    child: ClipRRect(
-                        borderRadius: BorderRadius.circular(
-                            18), // Slightly smaller radius for the Navigator to ensure the Container's border is visible
-                        child: Navigator(
-                          key: navigatorKey,
-                          initialRoute: '/',
-                          onGenerateRoute: (RouteSettings settings) {
-                            switch (settings.name) {
-                              case '/':
-                                return MaterialPageRoute(
-                                  builder: (context) => MusicLibraryPage(),
-                                );
-                              case '/album':
-                                final Object? arguments = settings.arguments;
-                                if (arguments is int) {
+            Expanded(
+              child: Center(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(
+                      10), // Adjust the radius for more or less rounded corners
+                  child: Container(
+                    // Adds space around the container, preventing it from touching the window edges
+                    child: Padding(
+                      padding: const EdgeInsets.all(
+                          8.0), // Adjust the padding as needed
+                      child: ClipRRect(
+                          borderRadius: BorderRadius.circular(
+                              18), // Slightly smaller radius for the Navigator to ensure the Container's border is visible
+                          child: Navigator(
+                            key: navigatorKey,
+                            initialRoute: '/',
+                            onGenerateRoute: (RouteSettings settings) {
+                              switch (settings.name) {
+                                case '/':
                                   return MaterialPageRoute(
-                                    builder: (context) => AlbumPage(
-                                      albumId: arguments,
-                                    ),
+                                    builder: (context) => MusicLibraryPage(),
                                   );
-                                }
-                                ;
-                              case '/search':
-                                return MaterialPageRoute(
-                                    builder: ((context) => SearchPage()));
-                              case '/artist':
-                                return MaterialPageRoute(
-                                  builder: (context) => MusicLibraryPage(),
-                                );
-                              case '/playlist':
-                                return MaterialPageRoute(
-                                    builder: ((context) => PlaylistPage()));
-                            }
-                          },
-                        )),
+                                case '/album':
+                                  final Object? arguments = settings.arguments;
+                                  if (arguments is int) {
+                                    return MaterialPageRoute(
+                                      builder: (context) => AlbumPage(
+                                        albumId: arguments,
+                                      ),
+                                    );
+                                  }
+                                  ;
+                                case '/search':
+                                  return MaterialPageRoute(
+                                      builder: ((context) => SearchPage()));
+                                case '/artist':
+                                  return MaterialPageRoute(
+                                    builder: (context) => MusicLibraryPage(),
+                                  );
+                                case '/playlist':
+                                  return MaterialPageRoute(
+                                      builder: ((context) => PlaylistPage()));
+                              }
+                            },
+                          )),
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
       bottomNavigationBar: BottomAppBar(
         height: 104,

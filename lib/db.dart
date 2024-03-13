@@ -115,8 +115,7 @@ Future<void> findMusicFiles(Directory directory,
       final trackArtist = metadata?.artist ?? artistName ?? 'Unknown Artist';
       final trackAlbum = metadata?.album ?? albumName ?? 'Unknown Album';
       final trackNumber = metadata?.trackNumber ?? 1;
-      final duration = metadata?.duration!.inSeconds ??
-          240; // Duration in milliseconds, converted to seconds if available
+      final duration = metadata?.duration?.inSeconds ?? 240;
 
       await insertMusicInfoIntoDb(db, trackArtist, trackAlbum, songTitle,
           trackNumber, duration, entity.path);

@@ -91,7 +91,7 @@ class _AlbumPageState extends State<AlbumPage> {
                         Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(albumSnapshot.data!.title,
+                            Text(' ${albumSnapshot.data!.title}',
                                 style:
                                     Theme.of(context).textTheme.headlineLarge),
                             SizedBox(
