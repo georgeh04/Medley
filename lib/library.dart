@@ -5,6 +5,9 @@ import 'package:medleylibrary/db.dart'; // Ensure this file has the necessary fu
 import 'ArtistPage.dart';
 import 'package:sqflite/sqflite.dart';
 import 'audiomanager.dart';
+import 'dart:io';
+import 'PlaylistPage.dart';
+import 'main.dart';
 
 class MusicLibraryPage extends StatefulWidget {
   @override
@@ -50,14 +53,39 @@ class _MusicLibraryPageState extends State<MusicLibraryPage>
         context); // This is required when using AutomaticKeepAliveClientMixin
 
     return Scaffold(
-      appBar: TabBar(
-        controller: _tabController,
-        tabs: [
-          Tab(text: 'Artists'),
-          Tab(text: 'Songs'),
-          Tab(text: 'Albums'),
-        ],
-      ),
+      appBar: !Platform.isAndroid
+          ? PreferredSize(
+              preferredSize:
+                  Size.fromHeight(kToolbarHeight), // Standard toolbar height
+              child: TabBar(
+                controller: _tabController,
+                tabs: [
+                  Tab(text: 'Artists'),
+                  Tab(text: 'Songs'),
+                  Tab(text: 'Albums'),
+                ],
+              ))
+          : AppBar(
+              title: Text('Search Music Library'),
+              bottom: TabBar(
+                controller: _tabController,
+                tabs: [
+                  Tab(text: 'Artists'),
+                  Tab(text: 'Songs'),
+                  Tab(text: 'Albums'),
+                ],
+              ),
+              actions: [
+                IconButton(
+                  icon: Icon(Icons.settings),
+                  onPressed: () {
+                    showSettingsDialog(context, (String val) {
+                      setState(() {});
+                    });
+                  },
+                ),
+              ],
+            ),
       body: TabBarView(
         controller: _tabController,
         children: [
@@ -116,7 +144,8 @@ class _MusicLibraryPageState extends State<MusicLibraryPage>
                                 value: 'edit',
                                 child: Text('Add to Playlist'),
                                 onTap: () {
-                                  addSongToPlaylist(9, song.id);
+                                  showAddToPlaylistDialog(
+                                      context, song.id, song.title);
                                 },
                               ),
                             ],

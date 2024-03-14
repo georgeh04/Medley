@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:media_kit/media_kit.dart';
+import 'package:medleylibrary/main.dart';
 import 'library.dart';
+import 'globalKeys.dart';
 
 class PlaybackManager {
   ValueNotifier<Song?> currentSongNotifier = ValueNotifier(null);
@@ -23,6 +26,9 @@ class PlaybackManager {
       if (event == true) {
         currentTrackIndex++;
         currentSongNotifier.value = queue[currentTrackIndex];
+        if (lastfmConnected == true) {
+          scrobbleFromSong(currentSongNotifier.value!);
+        }
       }
     });
     _player.stream.playing.listen((_isPlaying) => isPlaying.value = _isPlaying);
@@ -40,6 +46,9 @@ class PlaybackManager {
   }
 
   Future<void> playSongObject(Song song) async {
+    if (lastfmConnected == true) {
+      scrobbleFromSong(song);
+    }
     Media media = Media(song.path);
     await _player.open(media);
     currentSongNotifier.value = song;
@@ -69,7 +78,9 @@ class PlaybackManager {
 
     // Update the current song notifier to reflect the current song
     currentSongNotifier.value = queue[currentTrackIndex];
-
+    if (lastfmConnected == true) {
+      scrobbleFromSong(currentSongNotifier.value!);
+    }
     // Start playback
     await _player.play();
   }
@@ -104,4 +115,24 @@ class PlaybackManager {
   Song? getCurrentSong() {
     return currentSongNotifier.value;
   }
+}
+
+void scrobbleFromSong(Song song) {
+  DateTime now = DateTime.now();
+
+// Convert to milliseconds since epoch, then divide by 1000 to get seconds
+  int secondsSinceEpoch = now.millisecondsSinceEpoch ~/ 1000;
+
+  Map<String, dynamic> tracksData = {
+    'artist': song.artistName,
+    'track': song.title,
+    'timestamp':
+        secondsSinceEpoch.toString(), // Example UNIX timestamp (in seconds)
+    // Optional parameters
+    'album': song.albumName,
+    'trackNumber': song.trackNumber.toString(),
+    'chosenByUser': '1', // Assuming the user chose this song
+  };
+  scrobbleTracks(tracksData, 'cad200fbadbeb49cbd8b060607a0ccf5',
+      '83a6ae544f0729705292a12699d92c58', lastfmSession!);
 }
