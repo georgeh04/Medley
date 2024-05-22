@@ -8,6 +8,7 @@ import 'audiomanager.dart';
 import 'dart:io';
 import 'PlaylistPage.dart';
 import 'main.dart';
+import 'globals.dart';
 
 class MusicLibraryPage extends StatefulWidget {
   @override
@@ -53,6 +54,38 @@ class _MusicLibraryPageState extends State<MusicLibraryPage>
         context); // This is required when using AutomaticKeepAliveClientMixin
 
     return Scaffold(
+      drawer: Drawer(
+        child: ListView(
+          padding: EdgeInsets.zero,
+          children: <Widget>[
+            UserAccountsDrawerHeader(
+              accountName:
+                  Text(userData.displayName), // Replace with actual user name
+              accountEmail:
+                  Text(userData.username), // Replace with actual user email
+              currentAccountPicture: CircleAvatar(
+                backgroundImage: NetworkImage(userData
+                    .profilePictureUrl), // Replace with actual user profile picture URL
+              ),
+            ),
+            ListTile(
+              leading: Icon(Icons.reviews),
+              title: Text('Reviews'),
+              // No onTap action provided for "Reviews"
+            ),
+            ListTile(
+              leading: Icon(Icons.settings),
+              title: Text('Settings'),
+              onTap: () {
+                // Assuming showSettingsDialog is correctly implemented elsewhere
+                showSettingsDialog(context, (String val) {
+                  // Place to call setState or any other callback
+                });
+              },
+            ),
+          ],
+        ),
+      ),
       appBar: !Platform.isAndroid
           ? PreferredSize(
               preferredSize:
@@ -66,7 +99,26 @@ class _MusicLibraryPageState extends State<MusicLibraryPage>
                 ],
               ))
           : AppBar(
-              title: Text('Search Music Library'),
+              leading: Builder(
+                builder: (BuildContext context) {
+                  return InkWell(
+                    onTap: () {
+                      Scaffold.of(context).openDrawer();
+                    },
+                    // Wrap CircleAvatar in a Container or Padding
+                    child: Container(
+                      margin: EdgeInsets.all(8), // Adjust the value as needed
+                      child: CircleAvatar(
+                        // The backgroundImage should remain unchanged
+                        backgroundImage: NetworkImage(
+                          userData.profilePictureUrl,
+                        ),
+                      ),
+                    ),
+                  );
+                },
+              ),
+              title: Text(''),
               bottom: TabBar(
                 controller: _tabController,
                 tabs: [
@@ -75,16 +127,6 @@ class _MusicLibraryPageState extends State<MusicLibraryPage>
                   Tab(text: 'Albums'),
                 ],
               ),
-              actions: [
-                IconButton(
-                  icon: Icon(Icons.settings),
-                  onPressed: () {
-                    showSettingsDialog(context, (String val) {
-                      setState(() {});
-                    });
-                  },
-                ),
-              ],
             ),
       body: TabBarView(
         controller: _tabController,
@@ -106,8 +148,8 @@ class _MusicLibraryPageState extends State<MusicLibraryPage>
                       leading: Icon(Icons.person),
                       title: Text(artist.name),
                       onTap: () {
-                        Navigator.push(context,
-                            MaterialPageRoute(builder: (context) {
+                        navigatorKey.currentState!
+                            .push(MaterialPageRoute(builder: (context) {
                           return ArtistPage(
                               artistId: artist.id, artistName: artist.name);
                         }));
@@ -188,8 +230,9 @@ class _MusicLibraryPageState extends State<MusicLibraryPage>
                       subtitle: Text(album
                           .artistName), // Assuming Album has an artistName field
                       onTap: () {
-                        Navigator.of(context)
-                            .pushNamed('/album', arguments: album.id);
+                        Navigator.of(context).push(MaterialPageRoute(
+                            builder: ((context) =>
+                                AlbumPage(albumId: album.id))));
                       },
                     );
                   },

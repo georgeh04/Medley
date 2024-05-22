@@ -7,15 +7,17 @@ import 'package:path_provider/path_provider.dart';
 
 // medley login
 
-
-
 // Last.fm Section
 
 String? lastfmSession = '';
 bool lastfmConnected = false;
 String? lastfmUsername = '';
 
+// Spotify Section
 
+String? spotifySession = '';
+bool spotifyConnected = false;
+String? spotifyUsername = '';
 
 Future initialiseLastfm() async {
   final appDocumentDirectory = await getApplicationDocumentsDirectory();

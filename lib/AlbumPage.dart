@@ -5,6 +5,7 @@ import 'package:medleylibrary/ArtistPage.dart';
 import 'package:medleylibrary/db.dart'; // Ensure this file has the necessary functions to interact with the database
 import 'package:medleylibrary/main.dart';
 import 'library.dart';
+import 'dart:io';
 
 import 'audiomanager.dart';
 
@@ -80,52 +81,98 @@ class _AlbumPageState extends State<AlbumPage> {
                 children: [
                   Padding(
                     padding: const EdgeInsets.all(16.0),
-                    child: Row(
-                      children: [
-                        Image.network(albumSnapshot.data!.coverUrl,
-                            height: 200), // Adjusted size for better layout
-                        SizedBox(
-                          height: 16,
-                          width: 16,
-                        ),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(' ${albumSnapshot.data!.title}',
-                                style:
-                                    Theme.of(context).textTheme.headlineLarge),
-                            SizedBox(
-                              height: 16,
-                            ),
-                            Row(
-                              children: [
-                                TextButton(
-                                  child: Text(
-                                    albumSnapshot.data!.artistName,
-                                    style:
-                                        Theme.of(context).textTheme.titleSmall,
-                                  ),
-                                  onPressed: () {
-                                    navigatorKey.currentState!.push(
+                    child: Platform.isAndroid
+                        ? Column(
+                            children: [
+                              Image.network(albumSnapshot.data!.coverUrl,
+                                  height: 200),
+                              SizedBox(height: 16),
+                              Text(albumSnapshot.data!.title,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .headlineLarge),
+                              SizedBox(height: 16),
+                              Row(
+                                children: [
+                                  TextButton(
+                                    child: Text(
+                                      albumSnapshot.data!.artistName,
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleSmall,
+                                    ),
+                                    onPressed: () {
+                                      navigatorKey.currentState!.push(
                                         MaterialPageRoute(
-                                            builder: (context) => ArtistPage(
-                                                artistId: albumSnapshot
-                                                    .data!.artistId,
-                                                artistName: albumSnapshot
-                                                    .data!.artistName)));
-                                  },
-                                ),
-                                Text('|   21 Tracks  |  2004')
-                              ],
-                            )
+                                          builder: (context) => ArtistPage(
+                                            artistId:
+                                                albumSnapshot.data!.artistId,
+                                            artistName:
+                                                albumSnapshot.data!.artistName,
+                                          ),
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                  Text('|   21 Tracks  |  2004')
+                                ],
+                              ),
+                            ],
+                          )
+                        : Row(
+                            children: [
+                              Image.network(albumSnapshot.data!.coverUrl,
+                                  height:
+                                      200), // Adjusted size for better layout
+                              SizedBox(
+                                height: 16,
+                                width: 16,
+                              ),
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(' ${albumSnapshot.data!.title}',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .headlineLarge),
+                                  SizedBox(
+                                    height: 16,
+                                  ),
+                                  Row(
+                                    children: [
+                                      TextButton(
+                                        child: Text(
+                                          albumSnapshot.data!.artistName,
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .titleSmall,
+                                        ),
+                                        onPressed: () {
+                                          navigatorKey.currentState!.push(
+                                              MaterialPageRoute(
+                                                  builder: (context) =>
+                                                      ArtistPage(
+                                                          artistId:
+                                                              albumSnapshot
+                                                                  .data!
+                                                                  .artistId,
+                                                          artistName:
+                                                              albumSnapshot
+                                                                  .data!
+                                                                  .artistName)));
+                                        },
+                                      ),
+                                      Text('|   21 Tracks  |  2004')
+                                    ],
+                                  )
 
-                            // Additional album details (release year, genre, etc.) can be added here],)
-                          ],
-                        ),
-                      ],
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.max,
-                    ),
+                                  // Additional album details (release year, genre, etc.) can be added here],)
+                                ],
+                              ),
+                            ],
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.max,
+                          ),
                   ),
                   Divider(),
                   FutureBuilder<List<Song>>(
