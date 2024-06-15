@@ -1,16 +1,35 @@
-# medley
+# Medley
 
-A new Flutter project.
+Welcome to **Medley**, a simple music player designed to simplify your listening experience, while also having features like Last.fm and Discord Rich Presence integration.
 
-## Getting Started
+This is a very early version of Medley, so expect some bugs. However, I can promise a relatively painless listening experience with what I have so far.
 
-This project is a starting point for a Flutter application.
+## Installation
 
-A few resources to get you started if this is your first Flutter project:
+To install Medley, follow these steps:
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+1. Download the latest release from the [GitHub Releases](https://github.com/georgeh04/Medley/releases) page.
+2. Run the installer and follow the on-screen instructions.
+3. Launch Medley from your desktop or start menu.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+### Adding Music to Medley
+
+Upon launching Medley for the first time, a window will appear for you to choose your music directory, which it will automatically scan and add music to.
+
+If you want to add more music to Medley, or rescan your files, here is how you do so.
+
+1. Open Medley.
+2. Click on the "Settings"/cog button.
+3. Click on the "Resync Library" button.
+4. Select your music directory.
+5. Medley will automatically scan the directory and add tracks to your library.
+
+## Roadmap
+
+We have many exciting features planned for future releases of Medley, including:
+- Online features like reviewing, listing and music discussion.
+- Advanced playlist management.
+- Support for more audio formats.
+- User-customizable themes and layouts.
+
+Stay tuned for more :)
