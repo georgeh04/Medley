@@ -8,8 +8,10 @@ import Foundation
 import audio_service
 import audio_session
 import audioplayers_darwin
+import audiotags
 import desktop_window
 import file_selector_macos
+import flutter_media_metadata
 import flutter_secure_storage_macos
 import flutter_web_auth
 import flutter_webrtc
@@ -27,8 +29,10 @@ func RegisterGeneratedPlugins(registry: FlutterPluginRegistry) {
   AudioServicePlugin.register(with: registry.registrar(forPlugin: "AudioServicePlugin"))
   AudioSessionPlugin.register(with: registry.registrar(forPlugin: "AudioSessionPlugin"))
   AudioplayersDarwinPlugin.register(with: registry.registrar(forPlugin: "AudioplayersDarwinPlugin"))
+  AudiotagsPlugin.register(with: registry.registrar(forPlugin: "AudiotagsPlugin"))
   DesktopWindowPlugin.register(with: registry.registrar(forPlugin: "DesktopWindowPlugin"))
   FileSelectorPlugin.register(with: registry.registrar(forPlugin: "FileSelectorPlugin"))
+  FlutterMediaMetadataPlugin.register(with: registry.registrar(forPlugin: "FlutterMediaMetadataPlugin"))
   FlutterSecureStoragePlugin.register(with: registry.registrar(forPlugin: "FlutterSecureStoragePlugin"))
   FlutterWebAuthPlugin.register(with: registry.registrar(forPlugin: "FlutterWebAuthPlugin"))
   FlutterWebRTCPlugin.register(with: registry.registrar(forPlugin: "FlutterWebRTCPlugin"))

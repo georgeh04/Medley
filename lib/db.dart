@@ -4,7 +4,7 @@ import 'package:sqflite/sqflite.dart';
 import 'package:sqflite_common/sqlite_api.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 import 'package:path/path.dart';
-import 'package:audio_metadata_reader/audio_metadata_reader.dart';
+import 'package:audiotags/audiotags.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
@@ -17,7 +17,7 @@ Future<Database> openDb() async {
     // Use the database factory for FFI
     final databaseFactory = databaseFactoryFfi;
     var databasesPath = await getApplicationDocumentsDirectory();
-    String path = join(databasesPath.path, 'medleyLibrary.db');
+    String path = join(databasesPath.path, 'medley.db');
     return databaseFactory.openDatabase(path,
         options: OpenDatabaseOptions(
           version: 1,
@@ -28,7 +28,7 @@ Future<Database> openDb() async {
   } else {
     // For non-Windows platforms, continue using the existing path
     final databasePath = await getDatabasesPath();
-    final path = join(databasePath, 'medleyLibrary.db');
+    final path = join(databasePath, 'medley.db');
     return openDatabase(path, version: 1,
         onCreate: (Database db, int version) async {
       await _createDb(db);
@@ -51,6 +51,7 @@ Future<void> _createDb(Database db) async {
       artistId INTEGER NOT NULL,
       name TEXT NOT NULL,
       coverUrl TEXT NOT NULL,
+      year TEXT,
       FOREIGN KEY (artistId) REFERENCES Artists(id)
     )
   ''');
@@ -104,26 +105,26 @@ Future<void> findMusicFiles(Directory directory,
       await findMusicFiles(Directory(entity.path),
           artistName: newArtistName, albumName: newAlbumName);
     } else if (entity is File && isMusicFile(entity)) {
-      // Use audio_metadata_reader to read metadata
-
       var file = File(entity.path);
-      final metadata = await readMetadata(file);
+      final metadata = await AudioTags.read(file.path);
 
       // Fallback to filename if metadata is not available
-      final songTitle =
-          metadata?.title ?? entity.path.split(Platform.pathSeparator).last;
-      final trackArtist = metadata?.artist ?? artistName ?? 'Unknown Artist';
+      final songTitle = metadata?.title ?? entity.path.split(Platform.pathSeparator).last;
+      final trackArtist = metadata?.albumArtist ?? artistName ?? 'Unknown Artist';
       final trackAlbum = metadata?.album ?? albumName ?? 'Unknown Album';
       final trackNumber = metadata?.trackNumber ?? 1;
-      final duration = metadata?.duration?.inSeconds ?? 240;
+      final duration = metadata?.duration!.toInt() ?? 240;
+      final year = metadata?.year.toString() ?? '';
+
 
       await insertMusicInfoIntoDb(db, trackArtist, trackAlbum, songTitle,
-          trackNumber, duration, entity.path);
+          trackNumber, duration, entity.path, year);
     }
   }
 
   await db.close();
 }
+
 
 Future<void> insertMusicInfoIntoDb(
     Database db,
@@ -132,26 +133,19 @@ Future<void> insertMusicInfoIntoDb(
     String? songTitle,
     int? trackNumber,
     int duration,
-    String filePath) async {
+    String filePath,
+    String year) async {
   int artistId = await _insertArtist(db, artistName);
-  int albumId = await _insertAlbum(db, artistId, albumName, artistName);
+  int albumId = await _insertAlbum(db, artistId, albumName, artistName, year);
 
   // Fallback: Use filename for title if metadata missing
   final fileName = basename(filePath); // Assuming basename from package:path
   final fileTitle = fileName.split('.').first; // Remove file extension
 
   final titleTrackRegex = RegExp(r'^(\d+)\s+(.+)$');
-  final match = titleTrackRegex.firstMatch(fileTitle);
-
-  if (match != null) {
-    trackNumber = int.parse(match.group(1) ?? '0');
-    songTitle = match.group(2) ?? songTitle ?? fileTitle;
-  } else if (songTitle == null || songTitle.isEmpty) {
-    songTitle = fileTitle; // Use filename if no metadata and no regex match
-  }
 
   // Normalize inputs to avoid case-sensitivity and path format issues
-  String normalizedSongTitle = songTitle.toLowerCase().trim();
+  String normalizedSongTitle = songTitle!.toLowerCase().trim();
   String normalizedFilePath = filePath.toLowerCase().trim();
 
   // Check for existing song in the DB
@@ -180,6 +174,7 @@ Future<void> insertMusicInfoIntoDb(
   }
 }
 
+
 Future<int> _insertArtist(Database db, String artistName) async {
   // First, check if the artist already exists.
   final List<Map<String, dynamic>> artists = await db.query(
@@ -203,6 +198,8 @@ Future<int> _insertArtist(Database db, String artistName) async {
 }
 
 Future<String?> fetchAlbumCoverArt(String artistName, String albumName) async {
+print('fetching $albumName cover, artist $artistName');
+
   const String apiKey =
       '47eae4afc5dc8f374fc3047348bf979d'; // Replace with your Last.fm API key
   final String apiUrl =
@@ -232,7 +229,7 @@ Future<String?> fetchAlbumCoverArt(String artistName, String albumName) async {
 }
 
 Future<int> _insertAlbum(
-    Database db, int artistId, String albumName, String artistName) async {
+    Database db, int artistId, String albumName, String artistName, String year) async {
   // First, check if the album already exists for the artist.
   final List<Map<String, dynamic>> albums = await db.query(
     'Albums',
@@ -251,7 +248,7 @@ Future<int> _insertAlbum(
   // If the album doesn't exist, insert a new record.
   return await db.insert(
     'Albums',
-    {'artistId': artistId, 'name': albumName, 'coverUrl': coverArt ?? ''},
+    {'artistId': artistId, 'name': albumName, 'coverUrl': coverArt ?? '', 'year' : year},
     conflictAlgorithm: ConflictAlgorithm.ignore,
   );
 }

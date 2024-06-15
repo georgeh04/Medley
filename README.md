@@ -1,4 +1,4 @@
-# medleylibrary
+# medley
 
 A new Flutter project.
 

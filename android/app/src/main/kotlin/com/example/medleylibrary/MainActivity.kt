@@ -1,4 +1,4 @@
-package com.example.medleylibrary
+package com.example.medley
 
 import io.flutter.embedding.android.FlutterActivity
 

@@ -9,6 +9,8 @@ var notReviewedIds = [];
 var reviewedIds = [];
 var userTags = [];
 
+bool offlineMode = true;
+
 class Globals extends ChangeNotifier {
   String mode = 'games';
 

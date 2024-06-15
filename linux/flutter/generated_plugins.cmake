@@ -4,8 +4,11 @@
 
 list(APPEND FLUTTER_PLUGIN_LIST
   audioplayers_linux
+  audiotags
   desktop_window
+  discord_rpc
   file_selector_linux
+  flutter_media_metadata
   flutter_secure_storage_linux
   flutter_webrtc
   media_kit_libs_linux

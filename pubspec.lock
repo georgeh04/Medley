@@ -145,6 +145,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.1.0"
+  audiotags:
+    dependency: "direct main"
+    description:
+      name: audiotags
+      sha256: aeff1eeddd86daf4aaa51f3a55e1104ecd24f388d8f005341c99dcf614854909
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.4.0"
   boolean_selector:
     dependency: transitive
     description:
@@ -161,6 +169,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.4.1"
+  build_cli_annotations:
+    dependency: transitive
+    description:
+      name: build_cli_annotations
+      sha256: b59d2769769efd6c9ff6d4c4cede0be115a566afc591705c2040b707534b1172
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.1.0"
   build_config:
     dependency: transitive
     description:
@@ -353,6 +369,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "5.4.2+1"
+  discord_rpc:
+    dependency: "direct main"
+    description:
+      name: discord_rpc
+      sha256: da0d891af04a97bd2e0ffc6f5fc1ec49511b7b9d2dcce9a5e2814e5039e98384
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.0.2"
   drift:
     dependency: transitive
     description:
@@ -478,6 +502,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.1"
+  flutter_media_metadata:
+    dependency: "direct main"
+    description:
+      name: flutter_media_metadata
+      sha256: "69cfc76ffd6cd5d546dcc4880584b3844c5e879e435aa54f57f1096c15bd04db"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.0+1"
   flutter_plugin_android_lifecycle:
     dependency: transitive
     description:
@@ -494,6 +526,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.0.1"
+  flutter_rust_bridge:
+    dependency: transitive
+    description:
+      name: flutter_rust_bridge
+      sha256: e12415c3bce49bcbc3fed383f0ea41ad7d828f6cf0eccba0588ffa5a812fe522
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.82.1"
   flutter_secure_storage:
     dependency: "direct main"
     description:
@@ -568,6 +608,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.9.48+hotfix.1"
+  freezed_annotation:
+    dependency: transitive
+    description:
+      name: freezed_annotation
+      sha256: c3fd9336eb55a38cc1bbd79ab17573113a8deccd0ecbbf926cca3c62803b5c2d
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.4.1"
   frontend_server_client:
     dependency: transitive
     description:
@@ -1104,6 +1152,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.2.3"
+  puppeteer:
+    dependency: transitive
+    description:
+      name: puppeteer
+      sha256: c45c51b4ad8d70acdffeb1cfb9d16b60a7eaab7bfef314dd5b02c3607269b556
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.11.0"
   recase:
     dependency: transitive
     description:
@@ -1200,6 +1256,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.4.1"
+  shelf_static:
+    dependency: transitive
+    description:
+      name: shelf_static
+      sha256: a41d3f53c4adf0f57480578c1d61d90342cd617de7fc8077b1304643c2d85c1e
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.1.2"
   shelf_web_socket:
     dependency: transitive
     description:
@@ -1349,6 +1413,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.0.1"
+  tuple:
+    dependency: transitive
+    description:
+      name: tuple
+      sha256: a97ce2013f240b2f3807bcbaf218765b6f301c3eff91092bcfa23a039e7dd151
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.2"
   typed_data:
     dependency: transitive
     description:
@@ -1494,13 +1566,13 @@ packages:
     source: hosted
     version: "1.1.2"
   win32:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: win32
-      sha256: "464f5674532865248444b4c3daca12bd9bf2d7c47f759ce2617986e7229494a8"
+      sha256: a79dbe579cb51ecd6d30b17e0cae4e0ea15e2c0e66f69ad4198f22a6789e94f4
       url: "https://pub.dev"
     source: hosted
-    version: "5.2.0"
+    version: "5.5.1"
   window_manager:
     dependency: "direct main"
     description:
@@ -1534,5 +1606,5 @@ packages:
     source: hosted
     version: "3.1.2"
 sdks:
-  dart: ">=3.3.0 <4.0.0"
+  dart: ">=3.4.0 <4.0.0"
   flutter: ">=3.19.0"

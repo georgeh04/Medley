@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
-import 'package:medleylibrary/AlbumPage.dart';
-import 'package:medleylibrary/db.dart'; // Ensure this file has the necessary functions to interact with the database
+import 'package:medley/AlbumPage.dart';
+import 'package:medley/db.dart'; // Ensure this file has the necessary functions to interact with the database
 import 'ArtistPage.dart';
 import 'package:sqflite/sqflite.dart';
 import 'audiomanager.dart';
@@ -324,6 +324,7 @@ class Album {
   final int artistId;
   final String artistName; // Add artist name
   final String coverUrl;
+  final String year;
 
   Album({
     required this.id,
@@ -331,6 +332,7 @@ class Album {
     required this.artistId,
     required this.artistName,
     required this.coverUrl,
+    required this.year,
   });
 
   factory Album.fromMap(Map<String, dynamic> map) {
@@ -340,6 +342,7 @@ class Album {
       artistId: map['artistId'],
       artistName: map['artistName'],
       coverUrl: map['coverUrl'],
+      year: map['year']
     );
   }
 }

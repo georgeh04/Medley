@@ -1,7 +1,8 @@
+import 'package:discord_rpc/discord_rpc_native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:medleylibrary/AlbumPage.dart';
-import 'package:medleylibrary/PlaylistPage.dart';
+import 'package:medley/AlbumPage.dart';
+import 'package:medley/PlaylistPage.dart';
 import 'library.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:io';
@@ -23,6 +24,8 @@ import 'package:google_fonts/google_fonts.dart';
 import 'Store.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:desktop_window/desktop_window.dart';
+import 'package:path/path.dart' as pathfind;
+
 import 'dart:io' show Platform;
 import 'dart:io';
 import 'LoginPage.dart';
@@ -42,6 +45,12 @@ import 'PlaylistsPage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'globals.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:discord_rpc/discord_rpc.dart' as discord;
+import 'package:win32/win32.dart';
+import 'dart:ffi' as dartffi;
+
+
 
 Future<void> requestPermissions() async {
   var status = await Permission.storage.status;
@@ -51,7 +60,11 @@ Future<void> requestPermissions() async {
   }
 }
 
+
+
+
 void main() async {
+  discord.DiscordRPC.initialize();
   MediaKit.ensureInitialized();
   final audioHandler = await AudioService.init(
     builder: () => MyAudioHandler(),
@@ -94,6 +107,8 @@ void main() async {
 }
 
 class MyAudioHandler extends BaseAudioHandler {
+  var discordrpc = DiscordRPC(applicationId: '1251593859968925716');
+
   final PlaybackManager _playbackManager = PlaybackManager();
 
   MyAudioHandler() {
@@ -115,6 +130,20 @@ class MyAudioHandler extends BaseAudioHandler {
         artist: currentSong.artistName,
         // Add more properties as needed, like duration, artUri, etc.
       ));
+
+      discordrpc.start(autoRegister: true);
+
+      final currentTime = DateTime.now().millisecondsSinceEpoch ~/ 1000; // Convert milliseconds to seconds
+  // Calculate the end time in epoch seconds
+  final endTime = currentTime + currentSong.duration;
+
+      discordrpc.updatePresence(discord.DiscordPresence(
+        state: '${currentSong.artistName} - ${currentSong.title}',
+        details: 'Listening to Music:',
+        largeImageKey: '${currentSong.coverUrl}',
+        largeImageText: '${currentSong.albumName}',
+        endTimeStamp: endTime
+    ),);
     }
   }
 
@@ -233,6 +262,23 @@ class MusicPlayerApp extends StatelessWidget {
           // Check if the future is resolved
           if (snapshot.connectionState == ConnectionState.done) {
             // Check if the user is logged in
+
+            if(offlineMode){
+              return MaterialApp(
+                theme: ThemeData(
+                  primarySwatch: Colors.blue,
+                  visualDensity: VisualDensity.adaptivePlatformDensity,
+                ),
+                darkTheme: ThemeData(
+                  appBarTheme: AppBarTheme(backgroundColor: Color(0xFF2A2730)),
+                  scaffoldBackgroundColor: Color(0xFF2A2730),
+                  primaryColorDark: Color(0xFF2A2730),
+                  brightness: Brightness.dark,
+                ),
+                themeMode: ThemeMode.dark,
+                home: MainScreen(),
+              );
+            } else{
             final bool isLoggedIn = snapshot.data ?? false;
             if (isLoggedIn == true) {
               return MaterialApp(
@@ -265,7 +311,7 @@ class MusicPlayerApp extends StatelessWidget {
                 home: LoginScreen(),
               );
             }
-          }
+          }}
           return CircularProgressIndicator();
         });
   }
@@ -755,6 +801,8 @@ void showSettingsDialog(BuildContext context, Function(String) onChanged) {
                             },
                             child: Text('Connect to Last.fm'),
                           ),
+                    
+                    if(!offlineMode)
                     OutlinedButton(
                       onPressed: () {
                         connectToSpotify(context);
@@ -766,6 +814,8 @@ void showSettingsDialog(BuildContext context, Function(String) onChanged) {
                     SizedBox(
                       height: 8,
                     ),
+
+                    if(!offlineMode)
                     OutlinedButton(
                       onPressed: () async {
                         await clearUserLogin();
@@ -1195,10 +1245,28 @@ class _MainScreenState extends State<MainScreen>
     });
   }
 
+  Future<bool> doesDatabaseExist() async {
+  if (Platform.isWindows) {
+    var databasesPath = await getApplicationDocumentsDirectory();
+    String path = pathfind.join(databasesPath.path, 'medley.db');
+    return File(path).exists();
+  } else {
+    final databasePath = await getDatabasesPath();
+    final path = pathfind.join(databasePath, 'medley.db');
+    return File(path).exists();
+  }
+}
+
+
   @override
   void initState() {
+
     getUserLibraryIDS();
     requestPermissions().then((_) {
+      doesDatabaseExist().then((exists) {
+
+        if(!exists){
+      
       pickAndScanMusicFolder(context).then((_) {
         // If you're directly updating data that MusicLibraryPage reads,
         // simply calling setState here will refresh the data.
@@ -1206,7 +1274,9 @@ class _MainScreenState extends State<MainScreen>
           // This empty setState call triggers a rebuild of MainScreen,
           // which in turn will recreate MusicLibraryPage with potentially new data.
         });
-      });
+      });}
+      
+    });
     });
     _tabController = TabController(
         length: 4, vsync: this); // Adjust length based on the number of tabs
@@ -1373,6 +1443,7 @@ class _MainScreenState extends State<MainScreen>
                           ),
                           footerDivider: divider,
                           items: [
+                            if(!offlineMode)
                             SidebarXItem(
                                 iconWidget: CircleAvatar(
                                     backgroundImage: NetworkImage(
@@ -1384,6 +1455,8 @@ class _MainScreenState extends State<MainScreen>
                                     '/profile',
                                   );
                                 }),
+                                                            if(!offlineMode)
+
                             SidebarXItem(
                                 icon: Icons.home,
                                 label: 'Home',
@@ -1420,6 +1493,7 @@ class _MainScreenState extends State<MainScreen>
                                     '/playlist',
                                   );
                                 }),
+                                if(!offlineMode)
                             const SidebarXItem(
                               icon: Icons.reviews,
                               label: 'Reviews',
