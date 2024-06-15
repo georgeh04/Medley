@@ -146,7 +146,7 @@ class _SearchPageState extends State<SearchPage>
                 Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: Text('Artists',
-                      style: Theme.of(context).textTheme.headline6),
+                      style: Theme.of(context).textTheme.headlineLarge),
                 ),
                 ..._artistResults.map((artist) => ListTile(
                       title: Text(artist.name),
@@ -164,7 +164,7 @@ class _SearchPageState extends State<SearchPage>
                 Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: Text('Albums',
-                      style: Theme.of(context).textTheme.headline6),
+                      style: Theme.of(context).textTheme.headlineLarge),
                 ),
                 ..._albumResults.map((album) => ListTile(
                       leading: Image.network(album.coverUrl,
@@ -185,7 +185,7 @@ class _SearchPageState extends State<SearchPage>
                 Padding(
                   padding: const EdgeInsets.all(8.0),
                   child: Text('Songs',
-                      style: Theme.of(context).textTheme.headline6),
+                      style: Theme.of(context).textTheme.headlineLarge),
                 ),
                 ..._songResults.map((song) => ListTile(
                       leading: Image.network(song.coverUrl,

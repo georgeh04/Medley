@@ -69,154 +69,171 @@ class _AlbumPageState extends State<AlbumPage> {
         title: Text("Album Details"), // Providing context for the page
       ),
       body: FutureBuilder<Album>(
-        future: fetchAlbum(),
-        builder: (context, albumSnapshot) {
-          if (albumSnapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
-          } else if (albumSnapshot.hasError) {
-            return Text("Error: ${albumSnapshot.error}");
-          } else if (albumSnapshot.hasData) {
-            return SingleChildScrollView(
-              child: Column(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.all(16.0),
-                    child: Platform.isAndroid
-                        ? Column(
-                            children: [
-                              Image.network(albumSnapshot.data!.coverUrl,
-                                  height: 200),
-                              SizedBox(height: 16),
-                              Text(albumSnapshot.data!.title,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .headlineLarge),
-                              SizedBox(height: 16),
-                              Row(
-                                children: [
-                                  TextButton(
-                                    child: Text(
-                                      albumSnapshot.data!.artistName,
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .titleSmall,
-                                    ),
-                                    onPressed: () {
-                                      navigatorKey.currentState!.push(
-                                        MaterialPageRoute(
-                                          builder: (context) => ArtistPage(
-                                            artistId:
-                                                albumSnapshot.data!.artistId,
-                                            artistName:
-                                                albumSnapshot.data!.artistName,
-                                          ),
-                                        ),
-                                      );
-                                    },
-                                  ),
-                                  Text('|   21 Tracks  |  2004')
-                                ],
-                              ),
-                            ],
-                          )
-                        : Row(
-                            children: [
-                              Image.network(albumSnapshot.data!.coverUrl,
-                                  height:
-                                      200), // Adjusted size for better layout
-                              SizedBox(
-                                height: 16,
-                                width: 16,
-                              ),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(' ${albumSnapshot.data!.title}',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .headlineLarge),
-                                  SizedBox(
-                                    height: 16,
-                                  ),
-                                  Row(
-                                    children: [
-                                      TextButton(
-                                        child: Text(
-                                          albumSnapshot.data!.artistName,
-                                          style: Theme.of(context)
-                                              .textTheme
-                                              .titleSmall,
-                                        ),
-                                        onPressed: () {
-                                          navigatorKey.currentState!.push(
-                                              MaterialPageRoute(
-                                                  builder: (context) =>
-                                                      ArtistPage(
-                                                          artistId:
-                                                              albumSnapshot
-                                                                  .data!
-                                                                  .artistId,
-                                                          artistName:
-                                                              albumSnapshot
-                                                                  .data!
-                                                                  .artistName)));
-                                        },
-                                      ),
-                                      Text('|   21 Tracks  |  2004')
-                                    ],
-                                  )
-
-                                  // Additional album details (release year, genre, etc.) can be added here],)
-                                ],
-                              ),
-                            ],
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            mainAxisSize: MainAxisSize.max,
-                          ),
-                  ),
-                  Divider(),
-                  FutureBuilder<List<Song>>(
-                    future: fetchSongsForAlbum(widget.albumId),
-                    builder: (context, songsSnapshot) {
-                      if (songsSnapshot.connectionState ==
-                          ConnectionState.waiting) {
-                        return CircularProgressIndicator();
-                      } else if (songsSnapshot.hasError) {
-                        return Text("Error: ${songsSnapshot.error}");
-                      } else if (songsSnapshot.hasData) {
-                        return ListView.builder(
-                          physics:
-                              NeverScrollableScrollPhysics(), // Keep disabled scrolling
-                          shrinkWrap:
-                              true, // Ensure proper sizing within a Column
-                          itemCount: songsSnapshot.data!.length,
-                          itemBuilder: (context, index) {
-                            Song song = songsSnapshot.data![index];
-                            return ListTile(
-                              leading: Text(song.trackNumber.toString()),
-                              title: Text(song.title),
-                              onTap: () {
-                                // Assuming PlaybackManager() has a method to play a specific song
-                                PlaybackManager().playAlbumFromTrack(
-                                    songsSnapshot.data!, index);
-                              },
+  future: fetchAlbum(),
+  builder: (context, albumSnapshot) {
+    if (albumSnapshot.connectionState == ConnectionState.waiting) {
+      return Center(child: CircularProgressIndicator());
+    } else if (albumSnapshot.hasError) {
+      return Text("Error: ${albumSnapshot.error}");
+    } else if (albumSnapshot.hasData) {
+      return SingleChildScrollView(
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Platform.isAndroid
+                  ? Column(
+                      children: [
+                        Image.network(
+                          albumSnapshot.data!.coverUrl,
+                          height: 200,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Image.network(
+                              'https://placehold.jp/78/ffffff/000000/150x150.png?text=%E2%99%AA',
+                              height: 200,
                             );
                           },
-                        );
-                      } else {
-                        return Text("No songs found");
-                      }
+                        ),
+                        SizedBox(height: 16),
+                        Text(
+                          albumSnapshot.data!.title,
+                          style: Theme.of(context).textTheme.headlineLarge,
+                        ),
+                        SizedBox(height: 16),
+                        Row(
+                          children: [
+                            TextButton(
+                              child: Text(
+                                albumSnapshot.data!.artistName,
+                                style: Theme.of(context).textTheme.titleSmall,
+                              ),
+                              onPressed: () {
+                                navigatorKey.currentState!.push(
+                                  MaterialPageRoute(
+                                    builder: (context) => ArtistPage(
+                                      artistId: albumSnapshot.data!.artistId,
+                                      artistName: albumSnapshot.data!.artistName,
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                            Text('|   21 Tracks  |  2004'),
+                            
+                          ],
+                        ),
+                      ],
+                    )
+                  : Row(
+                      children: [
+                        Image.network(
+                          albumSnapshot.data!.coverUrl,
+                          height: 200, // Adjusted size for better layout
+                          errorBuilder: (context, error, stackTrace) {
+                            return Image.network(
+                              'https://placehold.jp/78/ffffff/000000/150x150.png?text=%E2%99%AA',
+                              height: 200,
+                            );
+                          },
+                        ),
+                        SizedBox(
+                          height: 16,
+                          width: 16,
+                        ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              ' ${albumSnapshot.data!.title}',
+                              style: Theme.of(context).textTheme.headlineLarge,
+                            ),
+                            SizedBox(height: 16),
+                            Row(
+                              children: [
+                                TextButton(
+                                  child: Text(
+                                    albumSnapshot.data!.artistName,
+                                    style: Theme.of(context).textTheme.titleSmall,
+                                  ),
+                                  onPressed: () {
+                                    navigatorKey.currentState!.push(
+                                      MaterialPageRoute(
+                                        builder: (context) => ArtistPage(
+                                          artistId: albumSnapshot.data!.artistId,
+                                          artistName: albumSnapshot.data!.artistName,
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                                Text('|   21 Tracks  |  2004'),
+                                
+                              ],
+                            ),
+                            // Additional album details (release year, genre, etc.) can be added here
+                                                        SizedBox(height: 16),
+
+                            ElevatedButton(
+                                    onPressed: () async {
+                                      List<Song> songs = await fetchSongsForAlbum(widget.albumId);
+                                      if (songs.isNotEmpty) {
+                                        PlaybackManager().playAlbumFromTrack(songs, 0);
+                                      }
+                                    },
+                                    child: Icon(Icons.play_arrow, color: Colors.white),
+                                    style: ElevatedButton.styleFrom(
+                                      shape: CircleBorder(),
+                                      padding: EdgeInsets.all(20),
+                                    ),
+                                  )
+                          ],
+                        ),
+                      ],
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.max,
+                    ),
+            ),
+            Divider(),
+            FutureBuilder<List<Song>>(
+              future: fetchSongsForAlbum(widget.albumId),
+              builder: (context, songsSnapshot) {
+                if (songsSnapshot.connectionState == ConnectionState.waiting) {
+                  return CircularProgressIndicator();
+                } else if (songsSnapshot.hasError) {
+                  return Text("Error: ${songsSnapshot.error}");
+                } else if (songsSnapshot.hasData) {
+                  return ListView.builder(
+                    physics: NeverScrollableScrollPhysics(), // Keep disabled scrolling
+                    shrinkWrap: true, // Ensure proper sizing within a Column
+                    itemCount: songsSnapshot.data!.length,
+                    itemBuilder: (context, index) {
+                      Song song = songsSnapshot.data![index];
+                      return ListTile(
+                        leading: Text(song.trackNumber.toString()),
+                        title: Text(song.title),
+                        onTap: () {
+                          // Assuming PlaybackManager() has a method to play a specific song
+                          PlaybackManager().playAlbumFromTrack(
+                              songsSnapshot.data!, index);
+                        },
+                      );
                     },
-                  ),
-                  // Here you would add components for rating, reviews, and related albums
-                ],
-              ),
-            );
-          } else {
-            return Text("No album found");
-          }
-        },
-      ),
+                  );
+                } else {
+                  return Text("No songs found");
+                }
+              },
+            ),
+            // Here you would add components for rating, reviews, and related albums
+          ],
+        ),
+      );
+    } else {
+      return Text("No album found");
+    }
+  },
+),
+
     );
   }
 }

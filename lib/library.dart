@@ -163,85 +163,100 @@ class _MusicLibraryPageState extends State<MusicLibraryPage>
             },
           ),
           FutureBuilder<List<Song>>(
-            future:
-                fetchSongs(), // Assuming this function is defined in db.dart
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return Center(child: CircularProgressIndicator());
-              } else if (snapshot.hasError) {
-                return Text("Error: ${snapshot.error}");
-              } else if (snapshot.hasData) {
-                return ListView.builder(
-                  itemCount: snapshot.data!.length,
-                  itemBuilder: (context, index) {
-                    Song song = snapshot.data![index];
-                    return GestureDetector(
-                        onSecondaryTap: () {
-                          showMenu(
-                            color: Colors.grey,
-                            context: context,
-                            position: RelativeRect.fill,
-                            items: [
-                              PopupMenuItem(
-                                value: 'edit',
-                                child: Text('Add to Playlist'),
-                                onTap: () {
-                                  showAddToPlaylistDialog(
-                                      context, song.id, song.title);
-                                },
-                              ),
-                            ],
-                          );
-                        },
-                        child: ListTile(
-                          leading: Container(
-                            child: Image.network(song.coverUrl),
-                          ),
-                          title: Text(song.title),
-                          subtitle: Text(song
-                              .artistName), // Assuming Song has an artistName field
-                          onTap: () {
-                            PlaybackManager().playSongObject(song);
-                          },
-                        ));
-                  },
-                );
-              } else {
-                return Text("No songs found");
-              }
+  future: fetchSongs(), // Assuming this function is defined in db.dart
+  builder: (context, snapshot) {
+    if (snapshot.connectionState == ConnectionState.waiting) {
+      return Center(child: CircularProgressIndicator());
+    } else if (snapshot.hasError) {
+      return Text("Error: ${snapshot.error}");
+    } else if (snapshot.hasData) {
+      return ListView.builder(
+        itemCount: snapshot.data!.length,
+        itemBuilder: (context, index) {
+          Song song = snapshot.data![index];
+          return GestureDetector(
+            onSecondaryTap: () {
+              showMenu(
+                color: Colors.grey,
+                context: context,
+                position: RelativeRect.fill,
+                items: [
+                  PopupMenuItem(
+                    value: 'edit',
+                    child: Text('Add to Playlist'),
+                    onTap: () {
+                      showAddToPlaylistDialog(context, song.id, song.title);
+                    },
+                  ),
+                ],
+              );
             },
-          ),
-          FutureBuilder<List<Album>>(
-            future:
-                fetchAlbums(), // Assuming this function is defined in db.dart
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return Center(child: CircularProgressIndicator());
-              } else if (snapshot.hasError) {
-                return Text("Error: ${snapshot.error}");
-              } else if (snapshot.hasData) {
-                return ListView.builder(
-                  itemCount: snapshot.data!.length,
-                  itemBuilder: (context, index) {
-                    Album album = snapshot.data![index];
-                    return ListTile(
-                      leading: Image.network(album.coverUrl),
-                      title: Text(album.title),
-                      subtitle: Text(album
-                          .artistName), // Assuming Album has an artistName field
-                      onTap: () {
-                        Navigator.of(context).push(MaterialPageRoute(
-                            builder: ((context) =>
-                                AlbumPage(albumId: album.id))));
-                      },
+            child: ListTile(
+              leading: Container(
+                child: Image.network(
+                  song.coverUrl == null ? 'https://placehold.jp/78/ffffff/000000/150x150.png?text=%E2%99%AA' : song.coverUrl!,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, error, stackTrace) {
+                    return Image.network(
+                      'https://placehold.jp/78/ffffff/000000/150x150.png?text=%E2%99%AA', // Placeholder image URL
+                      fit: BoxFit.cover,
                     );
                   },
+                ),
+              ),
+              title: Text(song.title),
+              subtitle: Text(song.artistName),
+              onTap: () {
+                PlaybackManager().playSongObject(song);
+              },
+            ),
+          );
+        },
+      );
+    } else {
+      return Text("No songs found");
+    }
+  },
+),
+
+          FutureBuilder<List<Album>>(
+  future: fetchAlbums(), // Assuming this function is defined in db.dart
+  builder: (context, snapshot) {
+    if (snapshot.connectionState == ConnectionState.waiting) {
+      return Center(child: CircularProgressIndicator());
+    } else if (snapshot.hasError) {
+      return Text("Error: ${snapshot.error}");
+    } else if (snapshot.hasData) {
+      return ListView.builder(
+        itemCount: snapshot.data!.length,
+        itemBuilder: (context, index) {
+          Album album = snapshot.data![index];
+          return ListTile(
+            leading: Image.network(
+              album.coverUrl == null ? 'https://placehold.jp/78/ffffff/000000/150x150.png?text=%E2%99%AA' : album.coverUrl!,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) {
+                return Image.network(
+                  'https://placehold.jp/78/ffffff/000000/150x150.png?text=%E2%99%AA', // Placeholder image URL
+                  fit: BoxFit.cover,
                 );
-              } else {
-                return Text("No albums found");
-              }
+              },
+            ),
+            title: Text(album.title),
+            subtitle: Text(album.artistName),
+            onTap: () {
+              Navigator.of(context).push(MaterialPageRoute(
+                  builder: ((context) => AlbumPage(albumId: album.id))));
             },
-          ),
+          );
+        },
+      );
+    } else {
+      return Text("No albums found");
+    }
+  },
+),
+
         ],
       ),
     );

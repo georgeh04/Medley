@@ -260,6 +260,7 @@ bool isMusicFile(File file) {
   return file.path.endsWith('.mp3') ||
       file.path.endsWith('.flac') ||
       file.path.endsWith('.wav') ||
+      file.path.endsWith('.m4a') ||
       file.path.endsWith('.aac');
 }
 
