@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:medley/db.dart'; // Ensure this file has necessary database functions
+import 'package:Medley/db.dart'; // Ensure this file has necessary database functions
 import 'library.dart';
 import 'AlbumPage.dart';
 import 'audiomanager.dart';

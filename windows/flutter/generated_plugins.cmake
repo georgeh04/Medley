@@ -8,7 +8,6 @@ list(APPEND FLUTTER_PLUGIN_LIST
   desktop_window
   discord_rpc
   file_selector_windows
-  flutter_media_metadata
   flutter_secure_storage_windows
   flutter_webrtc
   media_kit_libs_windows_audio

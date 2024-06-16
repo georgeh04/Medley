@@ -1,9 +1,9 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
-import 'package:medley/ArtistPage.dart';
-import 'package:medley/db.dart'; // Ensure this file has the necessary functions to interact with the database
-import 'package:medley/main.dart';
+import 'package:Medley/ArtistPage.dart';
+import 'package:Medley/db.dart'; // Ensure this file has the necessary functions to interact with the database
+import 'package:Medley/main.dart';
 import 'library.dart';
 import 'dart:io';
 

@@ -1,0 +1,17 @@
+flutter_app: 
+  command: Medley
+  arch: x64
+  parent: /usr/local/lib
+  nonInteractive: false
+
+control:
+  Package: Medley
+  Version: 0.1
+  Architecture: amd64
+  Priority: optional
+  Depends:
+  Maintainer: MedleyDev
+  Description: A simple music player designed to simplify your listening experience, while also having features like Last.fm and Discord Rich Presence integration.
+  
+#options:
+#  exec_out_dir: debian/packages

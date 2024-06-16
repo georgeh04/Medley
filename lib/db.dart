@@ -11,7 +11,7 @@ import 'package:path_provider/path_provider.dart';
 
 Future<Database> openDb() async {
   // Check if the platform is Windows
-  if (Platform.isWindows) {
+  if (Platform.isWindows || Platform.isLinux) {
     // Initialize sqflite FFI
     sqfliteFfiInit();
     // Use the database factory for FFI

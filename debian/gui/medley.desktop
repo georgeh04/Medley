@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=0.1
+Name=Medley
+GenericName=Medley
+Comment=A simple music player designed to simplify your listening experience, while also having features like Last.fm and Discord Rich Presence integration.
+Terminal=false
+Type=Application
+Categories=Utility;
+Keywords=Flutter;
+Icon=medley

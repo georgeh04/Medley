@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
-import 'package:medley/AlbumPage.dart';
-import 'package:medley/db.dart'; // Ensure this file has the necessary functions to interact with the database
+import 'package:Medley/AlbumPage.dart';
+import 'package:Medley/db.dart'; // Ensure this file has the necessary functions to interact with the database
 import 'ArtistPage.dart';
 import 'package:sqflite/sqflite.dart';
 import 'audiomanager.dart';

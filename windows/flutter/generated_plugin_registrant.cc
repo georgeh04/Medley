@@ -11,7 +11,6 @@
 #include <desktop_window/desktop_window_plugin.h>
 #include <discord_rpc/discord_rpc_plugin.h>
 #include <file_selector_windows/file_selector_windows.h>
-#include <flutter_media_metadata/flutter_media_metadata_plugin.h>
 #include <flutter_secure_storage_windows/flutter_secure_storage_windows_plugin.h>
 #include <flutter_webrtc/flutter_web_r_t_c_plugin.h>
 #include <media_kit_libs_windows_audio/media_kit_libs_windows_audio_plugin_c_api.h>
@@ -32,8 +31,6 @@ void RegisterPlugins(flutter::PluginRegistry* registry) {
       registry->GetRegistrarForPlugin("DiscordRpcPlugin"));
   FileSelectorWindowsRegisterWithRegistrar(
       registry->GetRegistrarForPlugin("FileSelectorWindows"));
-  FlutterMediaMetadataPluginRegisterWithRegistrar(
-      registry->GetRegistrarForPlugin("FlutterMediaMetadataPlugin"));
   FlutterSecureStorageWindowsPluginRegisterWithRegistrar(
       registry->GetRegistrarForPlugin("FlutterSecureStorageWindowsPlugin"));
   FlutterWebRTCPluginRegisterWithRegistrar(

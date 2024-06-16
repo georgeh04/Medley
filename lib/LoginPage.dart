@@ -6,7 +6,7 @@ import 'globals.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'ProfilePage.dart';
-import 'package:medley/main.dart';
+import 'package:Medley/main.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
 

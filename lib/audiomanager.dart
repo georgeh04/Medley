@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:media_kit/media_kit.dart';
-import 'package:medley/main.dart';
+import 'package:Medley/main.dart';
 import 'library.dart';
 import 'globalKeys.dart';
 import 'package:discord_rpc/discord_rpc.dart';

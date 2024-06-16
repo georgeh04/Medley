@@ -1,8 +1,8 @@
 import 'package:discord_rpc/discord_rpc_native.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:medley/AlbumPage.dart';
-import 'package:medley/PlaylistPage.dart';
+import 'package:Medley/AlbumPage.dart';
+import 'package:Medley/PlaylistPage.dart';
 import 'library.dart';
 import 'package:file_picker/file_picker.dart';
 import 'dart:io';
@@ -53,10 +53,12 @@ import 'dart:ffi' as dartffi;
 
 
 Future<void> requestPermissions() async {
+  if(!Platform.isLinux){
   var status = await Permission.storage.status;
   if (!status.isGranted) {
     await Permission.audio.request();
     await Permission.storage.request();
+  }
   }
 }
 
