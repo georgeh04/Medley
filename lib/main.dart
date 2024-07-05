@@ -87,7 +87,7 @@ void main() async {
   }
   print('on android or ios');
 
-  await initialiseLastfm();
+  // await initialiseLastfm();
 
   WindowOptions windowOptions = WindowOptions(
     size: Size(800, 600),
@@ -125,7 +125,7 @@ class MyAudioHandler extends BaseAudioHandler {
     if (currentSong != null) {
       // Update the media item for the currently playing song
       mediaItem.add(MediaItem(
-        artUri: Uri.parse(currentSong.coverUrl),
+        artUri: Uri.parse(currentSong.coverUrl!),
         id: currentSong.path,
         album: currentSong.albumName,
         title: currentSong.title,
@@ -424,7 +424,7 @@ void showQueueDialog(BuildContext context, PlaybackManager playbackManager) {
                   .currentTrackIndex; // Check if the song is currently playing
 
           return ListTile(
-            leading: Image.network(song.coverUrl),
+            leading: Image.network(song.coverUrl!),
             title: Text(song.title),
             subtitle: Text(song.artistName),
             trailing: isCurrentSong
@@ -1263,7 +1263,6 @@ class _MainScreenState extends State<MainScreen>
   @override
   void initState() {
 
-    getUserLibraryIDS();
     requestPermissions().then((_) {
       doesDatabaseExist().then((exists) {
 

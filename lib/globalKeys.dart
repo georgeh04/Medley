@@ -27,12 +27,20 @@ Future initialiseLastfm() async {
   if (lastfmConnected == false) {
     return null;
   } else {
+    
     var lastfm = await Hive.openBox('lastfmData');
     lastfmSession = await lastfm.get('lastfmSession');
     var info =
         await getUserInfo('cad200fbadbeb49cbd8b060607a0ccf5', lastfmSession!);
     print('user info here ${info}');
-    lastfmUsername = info!['name'];
+
+    if(info?['name'] == null){
+
+      lastfmConnected = false;
+      lastfmSession = '';
+      return null;
+    } else{lastfmUsername = info!['name'];}
+    
   }
 }
 

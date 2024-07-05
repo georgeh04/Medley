@@ -167,7 +167,7 @@ class _SearchPageState extends State<SearchPage>
                       style: Theme.of(context).textTheme.headlineLarge),
                 ),
                 ..._albumResults.map((album) => ListTile(
-                      leading: Image.network(album.coverUrl,
+                      leading: Image.network(album.coverUrl!,
                           errorBuilder: (context, error, stackTrace) =>
                               Icon(Icons.album)),
                       title: Text(album.title),
@@ -188,7 +188,7 @@ class _SearchPageState extends State<SearchPage>
                       style: Theme.of(context).textTheme.headlineLarge),
                 ),
                 ..._songResults.map((song) => ListTile(
-                      leading: Image.network(song.coverUrl,
+                      leading: Image.network(song.coverUrl!,
                           errorBuilder: (context, error, stackTrace) =>
                               Icon(Icons.music_note)),
                       title: Text(song.title),

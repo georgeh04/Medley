@@ -58,6 +58,20 @@ class PlaybackManager {
     await _player.play();
   }
 
+  Future<void> playNext(Song song) async {
+    queue.insert(0, song);
+    if (queue.length == 1) {
+      await playSongObject(song);
+    }
+  }
+
+  Future<void> playLater(Song song) async {
+    queue.add(song);
+    if (queue.length == 1) {
+      await playSongObject(song);
+    }
+  }
+
   Future<void> playAlbumFromTrack(List<Song> albumSongs, int trackIndex) async {
     if (albumSongs.isEmpty || trackIndex >= albumSongs.length) {
       return;

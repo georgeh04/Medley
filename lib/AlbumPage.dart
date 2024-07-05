@@ -2,17 +2,18 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:Medley/ArtistPage.dart';
-import 'package:Medley/db.dart'; // Ensure this file has the necessary functions to interact with the database
+import 'package:Medley/db.dart';
 import 'package:Medley/main.dart';
 import 'library.dart';
 import 'dart:io';
-
 import 'audiomanager.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:path_provider/path_provider.dart';
 
 Future<List<Song>> fetchSongsForAlbum(int albumId) async {
   final db = await openDb();
   final List<Map<String, dynamic>> maps = await db.rawQuery('''
-    SELECT Songs.*, Artists.name AS artistName, Albums.name AS albumName, Albums.coverUrl AS coverUrl
+    SELECT Songs.*, Artists.name AS artistName, Albums.name AS albumName, Albums.coverUrl AS coverUrl, Albums.localCoverPath AS localCoverPath
     FROM Songs
     JOIN Artists ON Songs.artistId = Artists.id
     JOIN Albums ON Songs.albumId = Albums.id
@@ -49,7 +50,7 @@ class _AlbumPageState extends State<AlbumPage> {
     var albumId = widget.albumId;
     final db = await openDb();
     final List<Map<String, dynamic>> maps = await db.rawQuery('''
-    SELECT Albums.*, Artists.name AS artistName, Albums.coverUrl AS coverUrl
+    SELECT Albums.*, Artists.name AS artistName, Albums.coverUrl AS coverUrl, Albums.localCoverPath AS localCoverPath
     FROM Albums
     INNER JOIN Artists ON Albums.artistId = Artists.id
     WHERE Albums.id = ?
@@ -59,6 +60,86 @@ class _AlbumPageState extends State<AlbumPage> {
     } else {
       throw Exception('Album not found');
     }
+  }
+
+  void _showAlbumContextMenu(BuildContext context, TapDownDetails details, Album album) {
+    showMenu(
+      context: context,
+      position: RelativeRect.fromLTRB(
+        details.globalPosition.dx,
+        details.globalPosition.dy,
+        details.globalPosition.dx,
+        details.globalPosition.dy,
+      ),
+      items: [
+        PopupMenuItem(
+          child: Text('Add Custom Artwork'),
+          value: 'custom_artwork',
+        ),
+      ],
+    ).then((value) {
+      if (value == 'custom_artwork') {
+        _addCustomArtwork(album);
+      }
+    });
+  }
+
+  Future<void> _addCustomArtwork(Album album) async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      type: FileType.image,
+      allowMultiple: false,
+    );
+
+    if (result != null) {
+      File file = File(result.files.single.path!);
+      final appDir = await getApplicationDocumentsDirectory();
+      final localPath = '${appDir.path}/album_covers/${album.id}_custom.jpg';
+      
+      await file.copy(localPath);
+
+      // Update the database
+      final db = await openDb();
+      await db.update(
+        'Albums',
+        {'localCoverPath': localPath},
+        where: 'id = ?',
+        whereArgs: [album.id],
+      );
+
+      // Update the UI
+      setState(() {
+        _albumFuture = fetchAlbum();
+      });
+    }
+  }
+
+  Widget _buildAlbumCover(Album album) {
+    if (album.localCoverPath != null && album.localCoverPath!.isNotEmpty) {
+      return Image.file(
+        File(album.localCoverPath!),
+        height: 200,
+        errorBuilder: (context, error, stackTrace) {
+          return _buildFallbackCover();
+        },
+      );
+    } else if (album.coverUrl != null && album.coverUrl!.isNotEmpty) {
+      return Image.network(
+        album.coverUrl!,
+        height: 200,
+        errorBuilder: (context, error, stackTrace) {
+          return _buildFallbackCover();
+        },
+      );
+    } else {
+      return _buildFallbackCover();
+    }
+  }
+
+  Widget _buildFallbackCover() {
+    return Image.network(
+      'https://placehold.jp/78/ffffff/000000/150x150.png?text=%E2%99%AA',
+      height: 200,
+    );
   }
 
   @override
@@ -83,15 +164,9 @@ class _AlbumPageState extends State<AlbumPage> {
                     child: Platform.isAndroid
                         ? Column(
                             children: [
-                              Image.network(
-                                albumSnapshot.data!.coverUrl,
-                                height: 200,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return Image.network(
-                                    'https://placehold.jp/78/ffffff/000000/150x150.png?text=%E2%99%AA',
-                                    height: 200,
-                                  );
-                                },
+                              GestureDetector(
+                                onSecondaryTapDown: (details) => _showAlbumContextMenu(context, details, albumSnapshot.data!),
+                                child: _buildAlbumCover(albumSnapshot.data!),
                               ),
                               SizedBox(height: 16),
                               Text(
@@ -126,8 +201,10 @@ class _AlbumPageState extends State<AlbumPage> {
                                             );
                                           },
                                         ),
-                                        Text('|   $trackCount Tracks  ' + (albumSnapshot.data!.year != 'null' ? '| ${albumSnapshot.data!.year}' : '')),
-
+                                        Text('|   $trackCount Tracks  ' +
+                                            (albumSnapshot.data!.year != 'null'
+                                                ? '| ${albumSnapshot.data!.year}'
+                                                : '')),
                                       ],
                                     );
                                   } else {
@@ -139,15 +216,9 @@ class _AlbumPageState extends State<AlbumPage> {
                           )
                         : Row(
                             children: [
-                              Image.network(
-                                albumSnapshot.data!.coverUrl,
-                                height: 200,
-                                errorBuilder: (context, error, stackTrace) {
-                                  return Image.network(
-                                    'https://placehold.jp/78/ffffff/000000/150x150.png?text=%E2%99%AA',
-                                    height: 200,
-                                  );
-                                },
+                              GestureDetector(
+                                onSecondaryTapDown: (details) => _showAlbumContextMenu(context, details, albumSnapshot.data!),
+                                child: _buildAlbumCover(albumSnapshot.data!),
                               ),
                               SizedBox(width: 16),
                               Column(
@@ -185,8 +256,10 @@ class _AlbumPageState extends State<AlbumPage> {
                                                 );
                                               },
                                             ),
-                                            Text(' |   $trackCount Tracks  ' + (albumSnapshot.data!.year != 'null' ? '|  ${albumSnapshot.data!.year}' : '')),
-
+                                            Text(' |   $trackCount Tracks  ' +
+                                                (albumSnapshot.data!.year != 'null'
+                                                    ? '|  ${albumSnapshot.data!.year}'
+                                                    : '')),
                                           ],
                                         );
                                       } else {
@@ -228,13 +301,17 @@ class _AlbumPageState extends State<AlbumPage> {
                           itemCount: songsSnapshot.data!.length,
                           itemBuilder: (context, index) {
                             Song song = songsSnapshot.data![index];
-                            return ListTile(
-                              leading: Text(song.trackNumber.toString()),
-                              title: Text(song.title),
-                              onTap: () {
-                                PlaybackManager().playAlbumFromTrack(songsSnapshot.data!, index);
-                              },
-                            );
+                            return GestureDetector(
+                                onSecondaryTapDown: (details) {
+                                  songContext(context, details, song);
+                                },
+                                child: ListTile(
+                                  leading: Text(song.trackNumber.toString()),
+                                  title: Text(song.title),
+                                  onTap: () {
+                                    PlaybackManager().playAlbumFromTrack(songsSnapshot.data!, index);
+                                  },
+                                ));
                           },
                         );
                       } else {
@@ -242,6 +319,7 @@ class _AlbumPageState extends State<AlbumPage> {
                       }
                     },
                   ),
+                  Divider()
                 ],
               ),
             );
@@ -252,4 +330,28 @@ class _AlbumPageState extends State<AlbumPage> {
       ),
     );
   }
+}
+
+Future<void> songContext(BuildContext context, TapDownDetails details, Song song) async {
+  var result = await showMenu(
+      context: context,
+      position: RelativeRect.fromLTRB(
+          details.globalPosition.dx,
+          details.globalPosition.dy,
+          details.globalPosition.dx,
+          details.globalPosition.dy),
+      items: [
+        PopupMenuItem(child: Text('Play Next'), value: 1),
+        PopupMenuItem(child: Text('Play Later'), value: 2)
+      ]);
+
+      if (result != null) {
+        print('result here $result');
+
+        if(result == 1){
+          PlaybackManager().playNext(song);
+        } if(result == 2) {
+          PlaybackManager().playLater(song);
+        }
+      }
 }

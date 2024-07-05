@@ -223,7 +223,7 @@ class _PlaylistPageState extends State<PlaylistPage> {
                     },
                     child: ListTile(
                       leading: Container(
-                        child: Image.network(song.coverUrl),
+                        child: Image.network(song.coverUrl!),
                       ),
                       title: Text(song.title),
                       subtitle: Text(song

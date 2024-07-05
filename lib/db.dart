@@ -9,6 +9,23 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 
+Future<String?> downloadAndSaveAlbumCover(int albumId, String coverUrl) async {
+  try {
+    final response = await http.get(Uri.parse(coverUrl));
+    if (response.statusCode == 200) {
+      final appDir = await getApplicationDocumentsDirectory();
+      final localPath = '${appDir.path}/album_covers/$albumId.jpg';
+      final imageFile = File(localPath);
+      await imageFile.create(recursive: true);
+      await imageFile.writeAsBytes(response.bodyBytes);
+      return localPath;
+    }
+  } catch (e) {
+    print('Error downloading album cover: $e');
+  }
+  return null;
+}
+
 Future<Database> openDb() async {
   // Check if the platform is Windows
   if (Platform.isWindows || Platform.isLinux) {
@@ -46,15 +63,16 @@ Future<void> _createDb(Database db) async {
   ''');
 
   await db.execute('''
-    CREATE TABLE Albums (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      artistId INTEGER NOT NULL,
-      name TEXT NOT NULL,
-      coverUrl TEXT NOT NULL,
-      year TEXT,
-      FOREIGN KEY (artistId) REFERENCES Artists(id)
-    )
-  ''');
+  CREATE TABLE Albums (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    artistId INTEGER NOT NULL,
+    name TEXT NOT NULL,
+    coverUrl TEXT NOT NULL,
+    localCoverPath TEXT,
+    year TEXT,
+    FOREIGN KEY (artistId) REFERENCES Artists(id)
+  )
+''');
 
   await db.execute('''
     CREATE TABLE Songs (
@@ -233,23 +251,84 @@ Future<int> _insertAlbum(
   // First, check if the album already exists for the artist.
   final List<Map<String, dynamic>> albums = await db.query(
     'Albums',
-    columns: ['id'],
+    columns: ['id', 'coverUrl', 'localCoverPath'],
     where: 'name = ? AND artistId = ?',
     whereArgs: [albumName, artistId],
   );
 
-  var coverArt = await fetchAlbumCoverArt(artistName, albumName);
-
   // If the album exists, return the existing ID.
   if (albums.isNotEmpty) {
-    return albums.first['id'];
+    final existingAlbum = albums.first;
+    // Only fetch and download cover if it doesn't exist
+    if (existingAlbum['coverUrl'] == null || existingAlbum['coverUrl'] == '') {
+      var coverArt = await fetchAlbumCoverArt(artistName, albumName);
+      String? localCoverPath;
+      if (coverArt != null) {
+        localCoverPath = await downloadAndSaveAlbumCover(existingAlbum['id'], coverArt);
+      }
+      // Update the existing album with the new cover art and local path if available
+      if (coverArt != null || localCoverPath != null) {
+        await db.update(
+          'Albums',
+          {
+            'coverUrl': coverArt ?? '',
+            'localCoverPath': localCoverPath,
+          },
+          where: 'id = ?',
+          whereArgs: [existingAlbum['id']],
+        );
+      }
+    }
+    return existingAlbum['id'];
   }
 
-  // If the album doesn't exist, insert a new record.
-  return await db.insert(
+  // If the album doesn't exist, fetch cover art and insert a new record
+  var coverArt = await fetchAlbumCoverArt(artistName, albumName);
+  String? localCoverPath;
+  if (coverArt != null) {
+    // We'll need to insert the album first to get an ID, then update with the local path
+    final id = await db.insert(
+      'Albums',
+      {
+        'artistId': artistId,
+        'name': albumName,
+        'coverUrl': coverArt,
+        'year': year
+      },
+      conflictAlgorithm: ConflictAlgorithm.ignore,
+    );
+    localCoverPath = await downloadAndSaveAlbumCover(id, coverArt);
+    if (localCoverPath != null) {
+      await db.update(
+        'Albums',
+        {'localCoverPath': localCoverPath},
+        where: 'id = ?',
+        whereArgs: [id],
+      );
+    }
+    return id;
+  } else {
+    // If no cover art is found, just insert the album without it
+    return await db.insert(
+      'Albums',
+      {
+        'artistId': artistId,
+        'name': albumName,
+        'coverUrl': '',
+        'year': year
+      },
+      conflictAlgorithm: ConflictAlgorithm.ignore,
+    );
+  }
+}
+
+Future<void> updateAlbumLocalCoverPath(int albumId, String localCoverPath) async {
+  final db = await openDb();
+  await db.update(
     'Albums',
-    {'artistId': artistId, 'name': albumName, 'coverUrl': coverArt ?? '', 'year' : year},
-    conflictAlgorithm: ConflictAlgorithm.ignore,
+    {'localCoverPath': localCoverPath},
+    where: 'id = ?',
+    whereArgs: [albumId],
   );
 }
 

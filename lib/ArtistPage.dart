@@ -76,7 +76,7 @@ class AlbumsTab extends StatelessWidget {
               Album album = snapshot.data![index];
               return ListTile(
                 leading: Container(
-                  child: Image.network(album.coverUrl),
+                  child: Image.network(album.coverUrl!),
                 ),
                 title: Text(album.title),
                 subtitle: Text(album.artistName),
@@ -118,7 +118,7 @@ class SongsTab extends StatelessWidget {
               Song song = snapshot.data![index];
               return ListTile(
                 leading: Container(
-                  child: Image.network(song.coverUrl),
+                  child: Image.network(song.coverUrl!),
                 ),
                 title: Text(song.title),
                 subtitle: Text(
