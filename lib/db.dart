@@ -91,7 +91,9 @@ Future<void> _createDb(Database db) async {
      CREATE TABLE Playlists (
        id INTEGER PRIMARY KEY,
        name TEXT,
-       userId INTEGER
+       userId INTEGER,
+       description TEXT,
+       imagePath TEXT
      )
    ''');
 

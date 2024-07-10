@@ -57,7 +57,25 @@ class _PlaylistsPageState extends State<PlaylistsPage> {
           }
           // Adjust the index for accessing playlists since the first item is the Add button
           final adjustedIndex = index - 1;
-          return ListTile(
+          return GestureDetector(onSecondaryTap: (){
+            showMenu(
+                          context: context,
+                          position: RelativeRect.fill,
+                          items: [
+                            PopupMenuItem(
+                              value: 'edit',
+                              child: Text('Delete Playlist'),
+                              onTap: () {
+                                deletePlaylist(playlists[adjustedIndex]['id']);
+                                setState(() {
+                                  
+                                });
+                              },
+                            ),
+                            
+                          ],
+                        );
+            },child: ListTile(
             title: Text(playlists[adjustedIndex]['name']),
             onTap: () {
               Navigator.push(
@@ -68,7 +86,7 @@ class _PlaylistsPageState extends State<PlaylistsPage> {
                 ),
               );
             },
-          );
+          ));
         },
         separatorBuilder: (context, index) => Divider(),
       ),

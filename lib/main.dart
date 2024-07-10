@@ -1657,7 +1657,7 @@ class _MainScreenState extends State<MainScreen>
                                       children: [
                                         Container(
                                           width:
-                                              150, // Set the width of the TextButton
+                                              200, // Set the width of the TextButton
                                           alignment: Alignment
                                               .centerLeft, // Align the text to the left
                                           child: TextButton(

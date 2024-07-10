@@ -14,7 +14,7 @@ class PlaybackManager {
   factory PlaybackManager() => _instance;
   int currentTrackIndex = 0;
 
-  final Player _player = Player();
+  final Player _player = Player(configuration: PlayerConfiguration());
   List<Song> queue = [];
   ValueNotifier<bool> isPlaying = ValueNotifier(false);
   ValueNotifier<Duration> currentPositionNotifier =
